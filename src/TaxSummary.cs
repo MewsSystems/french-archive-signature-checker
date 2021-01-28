@@ -18,5 +18,10 @@ namespace Mews.SignatureChecker
             var parts = Data.OrderByDescending(d => d.Key).Select(d => $"{d.Key.ToSignatureString()}:{d.Value.ToSignatureString()}");
             return String.Join("|", parts);
         }
+
+        public static TaxSummary Sum(IEnumerable<TaxSummary> summaries)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -1,28 +1,28 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using FuncSharp;
+using Newtonsoft.Json;
 
 namespace Mews.SignatureChecker
 {
     internal class Archive
     {
-        public Archive(IReadOnlyList<ArchiveEntry> entries)
+        private Archive(IReadOnlyList<ArchiveEntry> entries, ArchiveMetadata metadata, byte[] signature)
         {
             Entries = entries;
+            Metadata = metadata;
+            Signature = signature;
         }
 
         public IReadOnlyList<ArchiveEntry> Entries { get; }
 
-        public Try<ArchiveEntry, string> GetEntry(string namePrefix)
-        {
-            return Entries.SingleOption(e => e.Name.StartsWith(namePrefix)).Match(
-                e => Try.Success<ArchiveEntry, string>(e),
-                _ => Try.Error($"No unique file found {namePrefix}*.")
-            );
-        }
+        public ArchiveMetadata Metadata { get; }
+
+        public byte[] Signature { get; }
 
         public static Try<Archive, string> Load(string path)
         {
@@ -32,18 +32,27 @@ namespace Mews.SignatureChecker
              );
         }
 
+        public Try<T, string> ProcessEntry<T>(string namePrefix, Func<ArchiveEntry, T> parser)
+        {
+            return ProcessEntry(Entries, namePrefix, parser);
+        }
+
         private static Try<Archive, string> ReadArchive(string path)
         {
-            var archive = Try.Create(_ =>
+            var entries = Try.Create(_ =>
             {
                 using (var stream = File.OpenRead(path))
                 using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
                 {
-                    var entries = zip.Entries.Select(e => ReadArchiveEntry(e)).ToList();
-                    return new Archive(entries);
+                    return zip.Entries.Select(e => ReadArchiveEntry(e)).ToList();
                 }
             });
-            return archive.MapError(e => "Invalid archive.");
+            return entries.MapError(e => "Invalid archive.").FlatMap(e =>
+            {
+                var metadata = GetMetadata(e);
+                var signature = GetSignature(e);
+                return metadata.FlatMap(m => signature.Map(s => new Archive(e, m, s)));
+            });
         }
 
         private static ArchiveEntry ReadArchiveEntry(ZipArchiveEntry zipEntry)
@@ -53,6 +62,36 @@ namespace Mews.SignatureChecker
                 var content = Encoding.UTF8.GetString(stream.ReadFully());
                 return new ArchiveEntry(zipEntry.Name, content);
             }
+        }
+
+        private static Try<ArchiveMetadata, string> GetMetadata(IReadOnlyList<ArchiveEntry> archiveEntries)
+        {
+            return ProcessEntry(archiveEntries, "METADATA.json", e => JsonConvert.DeserializeObject<ArchiveMetadata>(e.Content)).FlatMap(m =>
+            {
+                var isVersionSupported = m.Version == "1.0" || m.Version == "4.0";
+                return isVersionSupported.Match(
+                    t => Try.Success<ArchiveMetadata, string>(m),
+                    f => Try.Error("Archive version is not supported.")
+                );
+            });
+        }
+
+        private static Try<byte[], string> GetSignature(IReadOnlyList<ArchiveEntry> archiveEntries)
+        {
+            return ProcessEntry(archiveEntries, "SIGNATURE.txt", e => Base64Url.GetBytes(e.Content));
+        }
+
+        private static Try<T, string> ProcessEntry<T>(IReadOnlyList<ArchiveEntry> archiveEntries, string namePrefix, Func<ArchiveEntry, T> parser)
+        {
+            var entry = archiveEntries.SingleOption(e => e.Name.StartsWith(namePrefix)).Match(
+                e => Try.Success<ArchiveEntry, string>(e),
+                _ => Try.Error($"No unique file found {namePrefix}*.")
+            );
+            return entry.FlatMap(e =>
+            {
+                var result = Try.Create(_ => parser(e));
+                return result.MapError(_ => $"Invalid data ({e.Name}).");
+            });
         }
     }
 

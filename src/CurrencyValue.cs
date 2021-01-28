@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Mews.SignatureChecker
 {
     internal sealed class CurrencyValue
@@ -15,6 +18,16 @@ namespace Mews.SignatureChecker
         public string ToSignatureString()
         {
             return ((int)(Value * Currency.NormalizationConstant)).ToString();
+        }
+
+        public static CurrencyValue Parse(string value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static CurrencyValue Sum(IEnumerable<CurrencyValue> values)
+        {
+            throw new NotImplementedException();
         }
     }
 }
