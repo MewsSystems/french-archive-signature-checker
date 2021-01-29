@@ -65,18 +65,26 @@ namespace Mews.SignatureChecker
             return archive.ProcessEntry("INVOICE_FOOTER", e =>
             {
                 var values = GetCsvData(e.Content, v => CurrencyValue.Parse(v[18]));
-                return CurrencyValue.Sum(values);
+                return CurrencyValue.Sum(values.ToArray());
             });
         }
 
         private static TaxSummary ParseLineTaxSummary(string value)
         {
-            throw new NotImplementedException();
+            var values = value.Split('|');
+            var data = values.Select(v =>
+            {
+                var parts = v.Split(':');
+                var percentage = Decimal.Parse(parts[0].TrimEnd('%').Trim()) / 100;
+                var currencyValue = CurrencyValue.Parse(parts[1]);
+                return (percentage, currencyValue);
+            }).ToArray();
+            return new TaxSummary(data.GroupBy(d => d.percentage).ToDictionary(g => new TaxRate(g.Key), g => CurrencyValue.Sum(g.Select(i => i.currencyValue).ToArray())));
         }
 
         private static IReadOnlyList<T> GetCsvData<T>(string source, Func<string[], T> converter)
         {
-            var lines = source.Split('\n').Skip(1);
+            var lines = source.Split('\n').Skip(1).Where(l => !String.IsNullOrWhiteSpace(l));
             return lines.Select(l => converter(l.Split(';'))).ToList();
         }
     }

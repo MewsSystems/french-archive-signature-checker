@@ -1,15 +1,19 @@
 using System;
+using FuncSharp;
 
 namespace Mews.SignatureChecker
 {
-    internal sealed class TaxRate : IComparable<TaxRate>
+    internal sealed class TaxRate : Product1<decimal>, IComparable<TaxRate>
     {
         public TaxRate(decimal value)
+            : base(value)
         {
-            Value = value;
         }
 
-        public decimal Value { get; }
+        private decimal Value
+        {
+            get { return ProductValue1; }
+        }
 
         public string ToSignatureString()
         {

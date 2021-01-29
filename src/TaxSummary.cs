@@ -21,7 +21,7 @@ namespace Mews.SignatureChecker
 
         public static TaxSummary Sum(IEnumerable<TaxSummary> summaries)
         {
-            throw new NotImplementedException();
+            return new TaxSummary(summaries.SelectMany(s => s.Data).GroupBy(d => d.Key).ToDictionary(g => g.Key, g => CurrencyValue.Sum(g.Select(i => i.Value).ToArray())));
         }
     }
 }
