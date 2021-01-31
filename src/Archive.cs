@@ -24,22 +24,22 @@ namespace Mews.SignatureChecker
 
         public byte[] Signature { get; }
 
-        public static Try<Archive, string> Load(string path)
+        public static ITry<Archive, string> Load(string path)
         {
              return File.Exists(path).Match(
                 t => ReadArchive(path),
-                f => Try.Error("File does not exist.")
+                f => Try.Error<Archive, string>("File does not exist.")
              );
         }
 
-        public Try<T, string> ProcessEntry<T>(string namePrefix, Func<ArchiveEntry, T> parser)
+        public ITry<T, string> ProcessEntry<T>(string namePrefix, Func<ArchiveEntry, T> parser)
         {
             return ProcessEntry(Entries, namePrefix, parser);
         }
 
-        private static Try<Archive, string> ReadArchive(string path)
+        private static ITry<Archive, string> ReadArchive(string path)
         {
-            var entries = Try.Create(_ =>
+            var entries = Try.Create<IReadOnlyList<ArchiveEntry>, Exception>(_ =>
             {
                 using (var stream = File.OpenRead(path))
                 using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
@@ -64,32 +64,32 @@ namespace Mews.SignatureChecker
             }
         }
 
-        private static Try<ArchiveMetadata, string> GetMetadata(IReadOnlyList<ArchiveEntry> archiveEntries)
+        private static ITry<ArchiveMetadata, string> GetMetadata(IReadOnlyList<ArchiveEntry> archiveEntries)
         {
             return ProcessEntry(archiveEntries, "METADATA.json", e => JsonConvert.DeserializeObject<ArchiveMetadata>(e.Content)).FlatMap(m =>
             {
                 var isVersionSupported = m.Version == "1.0" || m.Version == "4.0";
                 return isVersionSupported.Match(
                     t => Try.Success<ArchiveMetadata, string>(m),
-                    f => Try.Error("Archive version is not supported.")
+                    f => Try.Error<ArchiveMetadata, string>("Archive version is not supported.")
                 );
             });
         }
 
-        private static Try<byte[], string> GetSignature(IReadOnlyList<ArchiveEntry> archiveEntries)
+        private static ITry<byte[], string> GetSignature(IReadOnlyList<ArchiveEntry> archiveEntries)
         {
             return ProcessEntry(archiveEntries, "SIGNATURE.txt", e => Base64Url.GetBytes(e.Content));
         }
 
-        private static Try<T, string> ProcessEntry<T>(IReadOnlyList<ArchiveEntry> archiveEntries, string namePrefix, Func<ArchiveEntry, T> parser)
+        private static ITry<T, string> ProcessEntry<T>(IReadOnlyList<ArchiveEntry> archiveEntries, string namePrefix, Func<ArchiveEntry, T> parser)
         {
             var entry = archiveEntries.SingleOption(e => e.Name.StartsWith(namePrefix)).Match(
                 e => Try.Success<ArchiveEntry, string>(e),
-                _ => Try.Error($"No unique file found {namePrefix}*.")
+                _ => Try.Error<ArchiveEntry, string>($"No unique file found {namePrefix}*.")
             );
             return entry.FlatMap(e =>
             {
-                var result = Try.Create(_ => parser(e));
+                var result = Try.Create<T, Exception>(_ => parser(e));
                 return result.MapError(_ => $"Invalid data ({e.Name}).");
             });
         }

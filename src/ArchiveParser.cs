@@ -8,7 +8,7 @@ namespace Mews.SignatureChecker
 {
     internal static class ArchiveParser
     {
-        public static Try<TaxSummary, string> GetTaxSummary(Archive archive)
+        public static ITry<TaxSummary, string> GetTaxSummary(Archive archive)
         {
             return archive.Metadata.Version.Match(
                 "1.0", _ => GetV1TaxSummary(archive),
@@ -16,7 +16,7 @@ namespace Mews.SignatureChecker
             );
         }
 
-        public static Try<CurrencyValue, string> GetReportedValue(Archive archive)
+        public static ITry<CurrencyValue, string> GetReportedValue(Archive archive)
         {
             return archive.Metadata.Version.Match(
                 "1.0", _ => GetV1ReportedValue(archive),
@@ -24,7 +24,7 @@ namespace Mews.SignatureChecker
             );
         }
 
-        private static Try<TaxSummary, string> GetV1TaxSummary(Archive archive)
+        private static ITry<TaxSummary, string> GetV1TaxSummary(Archive archive)
         {
             return archive.ProcessEntry("TAX_TOTALS", e =>
             {
@@ -41,7 +41,7 @@ namespace Mews.SignatureChecker
             });
         }
 
-        private static Try<CurrencyValue, string> GetV1ReportedValue(Archive archive)
+        private static ITry<CurrencyValue, string> GetV1ReportedValue(Archive archive)
         {
             return archive.ProcessEntry("TOTALS", e =>
             {
@@ -50,7 +50,7 @@ namespace Mews.SignatureChecker
             });
         }
 
-        private static Try<TaxSummary, string> GetV4TaxSummary(Archive archive)
+        private static ITry<TaxSummary, string> GetV4TaxSummary(Archive archive)
         {
             return archive.ProcessEntry("INVOICE_FOOTER", e =>
             {
@@ -60,7 +60,7 @@ namespace Mews.SignatureChecker
             });
         }
 
-        private static Try<CurrencyValue, string> GetV4ReportedValue(Archive archive)
+        private static ITry<CurrencyValue, string> GetV4ReportedValue(Archive archive)
         {
             return archive.ProcessEntry("INVOICE_FOOTER", e =>
             {

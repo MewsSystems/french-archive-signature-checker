@@ -17,7 +17,7 @@ namespace Mews.SignatureChecker
 
         public string TerminalIdentification { get; }
 
-        public Option<string> PreviousRecordSignature { get; }
+        public IOption<string> PreviousRecordSignature { get; }
 
         public DateTime Created { get; }
 

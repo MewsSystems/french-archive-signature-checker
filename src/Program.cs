@@ -13,7 +13,7 @@ namespace Mews.SignatureChecker
         {
             var archive = args.SingleOption().Match(
                 a => Archive.Load(a),
-                _ => Try.Error("Invalid arguments")
+                _ => Try.Error<Archive, string>("Invalid arguments")
             );
             var result = archive.FlatMap(a => IsArchiveValid(a)).Match(
                 r => r.Match(
@@ -25,7 +25,7 @@ namespace Mews.SignatureChecker
             Console.WriteLine(result);
         }
 
-        private static Try<bool, string> IsArchiveValid(Archive archive)
+        private static ITry<bool, string> IsArchiveValid(Archive archive)
         {
             return ComputeSignature(archive).Map(computedSignature =>
             {
@@ -36,7 +36,7 @@ namespace Mews.SignatureChecker
             });
         }
 
-        private static Try<byte[], string> ComputeSignature(Archive archive)
+        private static ITry<byte[], string> ComputeSignature(Archive archive)
         {
             return ArchiveParser.GetTaxSummary(archive).FlatMap(taxSummary => ArchiveParser.GetReportedValue(archive).Map(reportedValue =>
             {
