@@ -30,8 +30,8 @@ namespace Mews.SignatureChecker
             {
                 var data = GetCsvData(e.Content, l => new
                 {
-                    TaxRate = Decimal.Parse(l[4], CultureInfo.InvariantCulture),
-                    TaxValue = Decimal.Parse(l[10], CultureInfo.InvariantCulture)
+                    TaxRate = DecimalParser.Parse(l[4]),
+                    TaxValue = DecimalParser.Parse(l[10])
                 });
                 var lines = data.GroupBy(l => l.TaxRate).ToDictionary(
                     g => new TaxRate(g.Key),
@@ -75,11 +75,16 @@ namespace Mews.SignatureChecker
             var data = values.Select(v =>
             {
                 var parts = v.Split(':');
-                var percentage = Decimal.Parse(parts[0].TrimEnd('%').Trim()) / 100;
+                var percentage = DecimalParser.Parse(parts[0].TrimEnd('%').Trim()) / 100;
                 var currencyValue = CurrencyValue.Parse(parts[1]);
                 return (percentage, currencyValue);
-            }).ToArray();
-            return new TaxSummary(data.GroupBy(d => d.percentage).ToDictionary(g => new TaxRate(g.Key), g => CurrencyValue.Sum(g.Select(i => i.currencyValue).ToArray())));
+            });
+            var valuesByTaxRatePercentage = data.GroupBy(d => d.percentage);
+            var valueByTaxRate = valuesByTaxRatePercentage.ToDictionary(
+                g => new TaxRate(g.Key),
+                g => CurrencyValue.Sum(g.Select(i => i.currencyValue))
+            );
+            return new TaxSummary(valueByTaxRate);
         }
 
         private static IReadOnlyList<T> GetCsvData<T>(string source, Func<string[], T> converter)

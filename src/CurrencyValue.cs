@@ -1,5 +1,5 @@
 using System;
-using System.Globalization;
+using System.Collections.Generic;
 using System.Linq;
 using FuncSharp;
 
@@ -22,18 +22,29 @@ namespace Mews.SignatureChecker
             return ((int)(Value * Currency.NormalizationConstant)).ToString();
         }
 
-        public static CurrencyValue Parse(string value)
+        public static CurrencyValue Parse(string stringValue)
         {
-            var frenchCulture = new CultureInfo("fr-FR");
-            var sanitizedVal = value.Replace('\u00A0', ' ');
-            var val = Decimal.Parse(sanitizedVal, NumberStyles.Currency | NumberStyles.AllowDecimalPoint, frenchCulture);
-            return new CurrencyValue(Currencies.Euro, val);
+            var tokens = stringValue.Split('\u00A0', ' ').Where(t => !String.IsNullOrWhiteSpace(t)).ToList();
+            return tokens.Count.Match(
+                2, _ =>
+                {
+                    var value = DecimalParser.Parse(tokens[0]);
+                    var currency = Currencies.GetBySymbolOrCode(tokens[1].Trim()).Get(e => new Exception(e));
+                    return new CurrencyValue(currency, value);
+                },
+                _ => throw new ArgumentException($"Invalid {nameof(CurrencyValue)}.", nameof(stringValue))
+            );
         }
 
         public static CurrencyValue Sum(params CurrencyValue[] values)
         {
             var currency = values.Select(v => v.Currency).Distinct().SingleOption().Get(_ => new ArgumentException("All values need to be in the same currency."));
             return new CurrencyValue(currency, values.Sum(v => v.Value));
+        }
+
+        public static CurrencyValue Sum(IEnumerable<CurrencyValue> values)
+        {
+            return Sum(values.ToArray());
         }
     }
 }
