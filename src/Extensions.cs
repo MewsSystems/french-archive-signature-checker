@@ -32,5 +32,11 @@ namespace Mews.Fiscalization.SignatureChecker
             var parts = taxSummary.Data.OrderByDescending(d => d.Key).Select(d => $"{d.Key.ToSignatureString()}:{d.Value.ToSignatureString()}");
             return String.Join("|", parts);
         }
+
+        internal static string ToSignatureString(this TaxRate taxRate)
+        {
+            var rateNormalizationConstant = 100 * 100;
+            return ((int)(taxRate.Value * rateNormalizationConstant)).ToString().PadLeft(4, '0');
+        }
     }
 }

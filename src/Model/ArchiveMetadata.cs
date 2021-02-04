@@ -7,7 +7,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 {
     internal sealed class ArchiveMetadata
     {
-        public ArchiveMetadata(string terminalIdentification, IOption<string> previousRecordSignature, DateTime created, ArchiveVersion version)
+        private ArchiveMetadata(string terminalIdentification, IOption<string> previousRecordSignature, DateTime created, ArchiveVersion version)
         {
             TerminalIdentification = terminalIdentification;
             PreviousRecordSignature = previousRecordSignature;

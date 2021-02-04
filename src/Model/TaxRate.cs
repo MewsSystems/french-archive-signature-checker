@@ -10,15 +10,9 @@ namespace Mews.Fiscalization.SignatureChecker.Model
         {
         }
 
-        private decimal Value
+        public decimal Value
         {
             get { return ProductValue1; }
-        }
-
-        public string ToSignatureString()
-        {
-            var rateNormalizationConstant = 100 * 100;
-            return ((int)(Value * rateNormalizationConstant)).ToString().PadLeft(4, '0');
         }
 
         public int CompareTo(TaxRate other)

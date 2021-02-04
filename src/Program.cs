@@ -48,7 +48,7 @@ namespace Mews.Fiscalization.SignatureChecker
             var signatureProperties = new List<string>
             {
                 taxSummary.ToSignatureString(),
-                reportedValue.ToSignatureString(),
+                reportedValue.Value.ToSignatureString(),
                 archive.Metadata.Created.ToSignatureString(),
                 archive.Metadata.TerminalIdentification,
                 operationName,
