@@ -7,15 +7,17 @@ using System.Text;
 using FuncSharp;
 using Newtonsoft.Json;
 
-namespace Mews.SignatureChecker
+namespace Mews.Fiscalization.SignatureChecker.Model
 {
     internal class Archive
     {
-        private Archive(IReadOnlyList<ArchiveEntry> entries, ArchiveMetadata metadata, byte[] signature)
+        private Archive(IReadOnlyList<ArchiveEntry> entries, ArchiveMetadata metadata, byte[] signature, TaxSummary taxSummary, Amount reportedValue)
         {
             Entries = entries;
             Metadata = metadata;
             Signature = signature;
+            TaxSummary = taxSummary;
+            ReportedValue = reportedValue;
         }
 
         public IReadOnlyList<ArchiveEntry> Entries { get; }
@@ -23,6 +25,10 @@ namespace Mews.SignatureChecker
         public ArchiveMetadata Metadata { get; }
 
         public byte[] Signature { get; }
+
+        public TaxSummary TaxSummary { get; }
+
+        public Amount ReportedValue { get; }
 
         public static ITry<Archive, string> Load(string path)
         {
@@ -37,32 +43,9 @@ namespace Mews.SignatureChecker
             return ProcessEntry(Entries, namePrefix, parser);
         }
 
-        private static ITry<Archive, string> ReadArchive(string path)
-        {
-            var entries = Try.Create<IReadOnlyList<ArchiveEntry>, Exception>(_ =>
-            {
-                using (var stream = File.OpenRead(path))
-                using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
-                {
-                    return zip.Entries.Select(e => ReadArchiveEntry(e)).ToList();
-                }
-            });
-            return entries.MapError(e => "Invalid archive.").FlatMap(e =>
-            {
-                var metadata = GetMetadata(e);
-                var signature = GetSignature(e);
-                return metadata.FlatMap(m => signature.Map(s => new Archive(e, m, s)));
-            });
-        }
 
-        private static ArchiveEntry ReadArchiveEntry(ZipArchiveEntry zipEntry)
-        {
-            using (var stream = zipEntry.Open())
-            {
-                var content = Encoding.UTF8.GetString(stream.ReadFully());
-                return new ArchiveEntry(zipEntry.Name, content);
-            }
-        }
+
+
 
         private static ITry<ArchiveMetadata, string> GetMetadata(IReadOnlyList<ArchiveEntry> archiveEntries)
         {
@@ -93,5 +76,7 @@ namespace Mews.SignatureChecker
                 return result.MapError(_ => $"Invalid data ({e.Name}).");
             });
         }
+
+
     }
 }

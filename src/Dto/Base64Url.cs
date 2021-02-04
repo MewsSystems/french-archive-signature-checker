@@ -1,7 +1,7 @@
 using System;
 using FuncSharp;
 
-namespace Mews.SignatureChecker
+namespace Mews.Fiscalization.SignatureChecker
 {
     public static class Base64Url
     {

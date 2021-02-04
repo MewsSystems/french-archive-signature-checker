@@ -1,6 +1,6 @@
 using FuncSharp;
 
-namespace Mews.SignatureChecker
+namespace Mews.Fiscalization.SignatureChecker
 {
     internal sealed class Currency
     {

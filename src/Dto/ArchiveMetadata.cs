@@ -2,7 +2,7 @@ using System;
 using FuncSharp;
 using Newtonsoft.Json;
 
-namespace Mews.SignatureChecker
+namespace Mews.Fiscalization.SignatureChecker.Dto
 {
     internal sealed class ArchiveMetadata
     {

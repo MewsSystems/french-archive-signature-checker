@@ -1,17 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Mews.Fiscalization.SignatureChecker.Model;
 
-namespace Mews.SignatureChecker
+namespace Mews.Fiscalization.SignatureChecker
 {
     internal sealed class TaxSummary
     {
-        public IReadOnlyDictionary<TaxRate, CurrencyValue> Data { get; }
-
-        public TaxSummary(IReadOnlyDictionary<TaxRate, CurrencyValue> data)
+        public TaxSummary(IReadOnlyDictionary<TaxRate, Amount> data)
         {
             Data = data;
         }
+
+        public IReadOnlyDictionary<TaxRate, Amount> Data { get; }
 
         public string ToSignatureString()
         {
@@ -25,7 +26,7 @@ namespace Mews.SignatureChecker
             var valuesByTaxRate = summaryData.GroupBy(d => d.Key);
             return new TaxSummary(valuesByTaxRate.ToDictionary(
                 g => g.Key,
-                g => CurrencyValue.Sum(g.Select(i => i.Value))
+                g => Amount.Sum(g.Select(i => i.Value))
             ));
         }
     }
