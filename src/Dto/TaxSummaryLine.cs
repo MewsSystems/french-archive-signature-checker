@@ -1,7 +1,3 @@
-using System;
-using FuncSharp;
-using Newtonsoft.Json;
-
 namespace Mews.Fiscalization.SignatureChecker.Dto
 {
     internal sealed class TaxSummaryLine

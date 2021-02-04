@@ -1,20 +1,17 @@
 using System.Collections.Generic;
-using Mews.Fiscalization.SignatureChecker.Dto;
+using FuncSharp;
 
 namespace Mews.Fiscalization.SignatureChecker.Model
 {
     internal class Archive
     {
-        public Archive(IReadOnlyList<ArchiveEntry> entries, ArchiveMetadata metadata, byte[] signature, TaxSummary taxSummary, Amount reportedValue)
+        public Archive(ArchiveMetadata metadata, byte[] signature, TaxSummary taxSummary, ReportedValue reportedValue)
         {
-            Entries = entries;
             Metadata = metadata;
             Signature = signature;
             TaxSummary = taxSummary;
             ReportedValue = reportedValue;
         }
-
-        public IReadOnlyList<ArchiveEntry> Entries { get; }
 
         public ArchiveMetadata Metadata { get; }
 
@@ -22,8 +19,18 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         public TaxSummary TaxSummary { get; }
 
-        public Amount ReportedValue { get; }
+        public ReportedValue ReportedValue { get; }
 
-
+        public static ITry<Archive, IEnumerable<string>> Create(Dto.Archive archive)
+        {
+            return ArchiveMetadata.Create(archive).FlatMap(metadata =>
+            {
+                return Try.Aggregate(
+                    TaxSummary.Create(archive, metadata.Version),
+                    ReportedValue.Create(archive, metadata.Version),
+                    (taxSummary, reportedValue) => new Archive(metadata, null, taxSummary, reportedValue)
+                );
+            });
+        }
     }
 }
