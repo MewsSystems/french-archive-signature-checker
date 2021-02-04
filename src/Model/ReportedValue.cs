@@ -26,14 +26,16 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         private static ITry<Amount, IEnumerable<string>> GetReportedValueV1(Dto.Archive archive)
         {
-            var data = archive.Totals.Rows.Select(row => Parser.ParseDecimal(row.Values[3]));
-            return Try.Aggregate(data).FlatMap(values => Amount.Create(values.Sum(), "EUR"));
+            var totals = archive.Totals.ToTry(_ => "Totals file not found.".ToEnumerable());
+            var data = totals.FlatMap(t => Try.Aggregate(t.Rows.Select(row => Parser.ParseDecimal(row.Values[3]))));
+            return data.FlatMap(values => Amount.Create(values.Sum(), "EUR"));
         }
 
         private static ITry<Amount, IEnumerable<string>> GetReportedValueV4(Dto.Archive archive)
         {
-            var values = archive.InvoiceFooter.Rows.Select(row => Parser.ParseAmount(row.Values[18]));
-            return Try.Aggregate(values).Map(v => Amount.Sum(v));
+            var invoiceFooter = archive.InvoiceFooter.ToTry(_ => "Invoice footer file not found.".ToEnumerable());
+            var values = invoiceFooter.FlatMap(i => Try.Aggregate(i.Rows.Select(row => Parser.ParseAmount(row.Values[18]))));
+            return values.Map(v => Amount.Sum(v));
         }
     }
 }

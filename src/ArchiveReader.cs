@@ -12,25 +12,25 @@ namespace Mews.Fiscalization.SignatureChecker
         {
             var metadata = ReadEntry(entries, "METADATA.json");
             var signature = ReadEntry(entries, "SIGNATURE.txt");
-            var totals = ReadEntry(entries, "TOTALS").Map(e => GetCsvData(e.Content));
-            var taxTotals = ReadEntry(entries, "TAX_TOTALS").Map(e => GetCsvData(e.Content));
-            var invoiceFooter = ReadEntry(entries, "INVOICE_FOOTER").Map(e => GetCsvData(e.Content));
+            var taxTotals = ReadOptionalEntry(entries, "TAX_TOTALS").Map(e => GetCsvData(e.Content));
+            var totals = ReadOptionalEntry(entries, "TOTALS").Map(e => GetCsvData(e.Content));
+            var invoiceFooter = ReadOptionalEntry(entries, "INVOICE_FOOTER").Map(e => GetCsvData(e.Content));
 
-            return metadata.FlatMap(m => signature.FlatMap(s => totals.FlatMap(t => taxTotals.FlatMap(tt => invoiceFooter.Map(f => new Archive(
-                metadata: m,
-                signature: s,
-                totals: t,
-                taxTotals: tt,
-                invoiceFooter: f
-            ))))));
+            return Try.Aggregate(
+                metadata,
+                signature,
+                (m, s) => new Archive(metadata: m, signature: s, totals: totals, taxTotals: taxTotals, invoiceFooter: invoiceFooter)
+            );
         }
 
         private static ITry<ArchiveEntry, IEnumerable<string>> ReadEntry(IReadOnlyList<ArchiveEntry> archiveEntries, string namePrefix)
         {
-            return archiveEntries.SingleOption(e => e.Name.StartsWith(namePrefix)).Match(
-                e => Try.Success<ArchiveEntry, IEnumerable<string>>(e),
-                _ => Try.Error<ArchiveEntry, IEnumerable<string>>($"No unique file found {namePrefix}*.".ToEnumerable())
-            );
+            return ReadOptionalEntry(archiveEntries, namePrefix).ToTry(_ => $"No unique file found {namePrefix}*.".ToEnumerable());
+        }
+
+        private static IOption<ArchiveEntry> ReadOptionalEntry(IReadOnlyList<ArchiveEntry> archiveEntries, string namePrefix, bool isOptional = false)
+        {
+            return archiveEntries.SingleOption(e => e.Name.StartsWith(namePrefix));
         }
 
         private static CsvData GetCsvData(string source)

@@ -5,7 +5,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 {
     internal class Archive
     {
-        public Archive(ArchiveMetadata metadata, byte[] signature, TaxSummary taxSummary, ReportedValue reportedValue)
+        public Archive(ArchiveMetadata metadata, Signature signature, TaxSummary taxSummary, ReportedValue reportedValue)
         {
             Metadata = metadata;
             Signature = signature;
@@ -15,7 +15,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         public ArchiveMetadata Metadata { get; }
 
-        public byte[] Signature { get; }
+        public Signature Signature { get; }
 
         public TaxSummary TaxSummary { get; }
 
@@ -28,7 +28,8 @@ namespace Mews.Fiscalization.SignatureChecker.Model
                 return Try.Aggregate(
                     TaxSummary.Create(archive, metadata.Version),
                     ReportedValue.Create(archive, metadata.Version),
-                    (taxSummary, reportedValue) => new Archive(metadata, null, taxSummary, reportedValue)
+                    Signature.Create(archive.Signature.Content),
+                    (taxSummary, reportedValue, signature) => new Archive(metadata, signature, taxSummary, reportedValue)
                 );
             });
         }

@@ -1,8 +1,10 @@
+using FuncSharp;
+
 namespace Mews.Fiscalization.SignatureChecker.Dto
 {
     internal class Archive
     {
-        internal Archive(ArchiveEntry metadata, ArchiveEntry signature, CsvData totals, CsvData taxTotals, CsvData invoiceFooter)
+        internal Archive(ArchiveEntry metadata, ArchiveEntry signature, IOption<CsvData> totals, IOption<CsvData> taxTotals, IOption<CsvData> invoiceFooter)
         {
             Metadata = metadata;
             Signature = signature;
@@ -15,10 +17,10 @@ namespace Mews.Fiscalization.SignatureChecker.Dto
 
         public ArchiveEntry Signature { get; }
 
-        public CsvData Totals { get; }
+        public IOption<CsvData> Totals { get; }
 
-        public CsvData TaxTotals { get; }
+        public IOption<CsvData> TaxTotals { get; }
 
-        public CsvData InvoiceFooter { get; }
+        public IOption<CsvData> InvoiceFooter { get; }
     }
 }

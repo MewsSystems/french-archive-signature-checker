@@ -34,13 +34,17 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         private static ITry<TaxSummary, IEnumerable<string>> GetV1TaxSummary(Dto.Archive archive)
         {
-            var data = archive.TaxTotals.Rows.Select(row => Try.Aggregate(
-                Parser.ParseDecimal(row.Values[4]),
-                Parser.ParseDecimal(row.Values[10]).FlatMap(v => Amount.Create(v, "EUR")),
-                (taxRate, taxValue) => (TaxRate: new TaxRate(taxRate), TaxValue: taxValue)
-            ));
+            var taxTotals = archive.TaxTotals.ToTry(_ => "Tax totals file not found.".ToEnumerable());
+            var data = taxTotals.FlatMap(t => Try.Aggregate(t.Rows.Select(row =>
+            {
+                return Try.Aggregate(
+                    Parser.ParseDecimal(row.Values[4]),
+                    Parser.ParseDecimal(row.Values[10]).FlatMap(v => Amount.Create(v, "EUR")),
+                    (r, v) => (TaxRate: new TaxRate(r), TaxValue: v)
+                );
+            })));
 
-            return Try.Aggregate(data).Map(lines => new TaxSummary(lines.GroupBy(l => l.TaxRate).ToDictionary(
+            return data.Map(lines => new TaxSummary(lines.GroupBy(l => l.TaxRate).ToDictionary(
                 g => g.Key,
                 g => Amount.Sum(g.Select(value => value.TaxValue))
             )));
@@ -48,15 +52,17 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         private static ITry<TaxSummary, IEnumerable<string>> GetV4TaxSummary(Dto.Archive archive)
         {
-            var rows = archive.InvoiceFooter.Rows;
-            var taxBreakdownNet = Try.Aggregate(rows.Select(row => ParseLineTaxSummary(row.Values[1])));
-            var taxBreakdownTax = Try.Aggregate(rows.Select(row => ParseLineTaxSummary(row.Values[2])));
-
-            return Try.Aggregate(
-                taxBreakdownNet,
-                taxBreakdownTax,
-                (net, tax) => TaxSummary.Sum(net.Concat(tax))
-            );
+            var invoiceFooter = archive.InvoiceFooter.ToTry(_ => "Invoice footer file not found.".ToEnumerable());
+            return invoiceFooter.FlatMap(f =>
+            {
+                var taxBreakdownNet = Try.Aggregate(f.Rows.Select(row => ParseLineTaxSummary(row.Values[1])));
+                var taxBreakdownTax = Try.Aggregate(f.Rows.Select(row => ParseLineTaxSummary(row.Values[2])));
+                return Try.Aggregate(
+                    taxBreakdownNet,
+                    taxBreakdownTax,
+                    (net, tax) => TaxSummary.Sum(net.Concat(tax))
+                );
+            });
         }
 
         private static ITry<TaxSummary, IEnumerable<string>> ParseLineTaxSummary(string value)
