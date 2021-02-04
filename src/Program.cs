@@ -4,9 +4,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using FuncSharp;
-using Mews.Fiscalization.SignatureChecker.Dto;
 using Mews.Fiscalization.SignatureChecker.Model;
-using Archive = Mews.Fiscalization.SignatureChecker.Model.Archive;
 
 namespace Mews.Fiscalization.SignatureChecker
 {
@@ -14,17 +12,17 @@ namespace Mews.Fiscalization.SignatureChecker
     {
         public static void Main(string[] args)
         {
-            var path = args.SingleOption().ToTry(_ => "Invalid arguments");
+            var path = args.SingleOption().ToTry(_ => "Invalid arguments".ToEnumerable());
             var archiveEntries = path.FlatMap(p => ZipArchiveReader.ReadArchive(p));
-            var archiveFileContent = archiveEntries.FlatMap(e => ArchiveReader.ReadEntries(e));
-            var archive = archiveFileContent.FlatMap(c => ArchiveParser.ParseArchive(c));
+            var archiveFileContent = archiveEntries.FlatMap(e => ArchiveReader.ReadArchive(e));
+            var archive = archiveFileContent.FlatMap(a => ArchiveParser.ParseArchive(a));
 
             var result = archive.Match(
                 a => IsArchiveValid(a).Match(
                     t => "Archive signature IS valid.",
                     f => "Archive signature IS NOT valid."
                 ),
-                e => e
+                e => e.MkLines()
             );
             Console.WriteLine(result);
         }

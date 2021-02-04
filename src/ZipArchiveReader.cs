@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -8,11 +7,19 @@ using System.Text;
 using FuncSharp;
 using Mews.Fiscalization.SignatureChecker.Dto;
 
-namespace Mews.Fiscalization.SignatureChecker.Dto
+namespace Mews.Fiscalization.SignatureChecker
 {
     internal static class ZipArchiveReader
     {
-        public static ITry<IReadOnlyList<ArchiveEntry>, string> ReadArchive(string path)
+        public static ITry<IReadOnlyList<ArchiveEntry>, IEnumerable<string>> ReadArchive(string path)
+        {
+            return File.Exists(path).Match(
+                t => Read(path),
+                f => Try.Error<IReadOnlyList<ArchiveEntry>, IEnumerable<string>>("File does not exist.".ToEnumerable())
+            );
+        }
+
+        private static ITry<IReadOnlyList<ArchiveEntry>, IEnumerable<string>> Read(string path)
         {
             var entries = Try.Create<IReadOnlyList<ArchiveEntry>, Exception>(_ =>
             {
@@ -22,7 +29,7 @@ namespace Mews.Fiscalization.SignatureChecker.Dto
                     return zip.Entries.Select(e => ReadEntry(e)).ToList();
                 }
             });
-            return entries.MapError(e => "Cannot read archive.");
+            return entries.MapError(e => "Cannot read archive.".ToEnumerable());
         }
 
         private static ArchiveEntry ReadEntry(ZipArchiveEntry zipEntry)

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using FuncSharp;
-using Mews.Fiscalization.SignatureChecker.Dto;
+using Newtonsoft.Json;
 
 namespace Mews.Fiscalization.SignatureChecker.Model
 {
@@ -11,108 +11,62 @@ namespace Mews.Fiscalization.SignatureChecker.Model
     {
         private static readonly CultureInfo FrenchCulture = new CultureInfo("fr-FR");
 
-        public static ITry<TaxSummary, string> GetTaxSummary(Archive archive)
+        public static ITry<Archive, IEnumerable<string>> ParseArchive(Dto.Archive archive)
         {
-            return archive.Metadata.Version.Match(
-                "1.0", _ => GetV1TaxSummary(archive),
-                "4.0", _ => GetV4TaxSummary(archive)
-            );
-        }
-
-        public static ITry<Amount, string> GetReportedValue(Archive archive)
-        {
-            return archive.Metadata.Version.Match(
-                "1.0", _ => GetV1ReportedValue(archive),
-                "4.0", _ => GetV4ReportedValue(archive)
-            );
-        }
-
-        private static ITry<TaxSummary, string> GetV1TaxSummary(Archive archive)
-        {
-            return archive.ProcessEntry("TAX_TOTALS", e =>
+            var rawMetadata = archive.Metadata.Parse(e => JsonConvert.DeserializeObject<Dto.ArchiveMetadata>(e.Content));
+            return rawMetadata.FlatMap(m => ParseMetadata(m)).FlatMap(metadata =>
             {
-                var data = GetCsvData(e.Content, l => new
+                var reportedValue = ParseReportedValue(archive, metadata);
+            });
+        }
+
+        public static ITry<ArchiveMetadata, IEnumerable<string>> ParseMetadata(Dto.ArchiveMetadata metadata)
+        {
+            var version = metadata.Version.Match(
+                "1.0", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v100),
+                "1.2", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v120),
+                "4.0", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v400),
+                _ => Try.Error<ArchiveVersion, IEnumerable<string>>("Archive version is not supported.".ToEnumerable())
+            );
+            return version.Map(v => new ArchiveMetadata(
+                terminalIdentification: metadata.TerminalIdentification,
+                previousRecordSignature: metadata.PreviousRecordSignature.ToNonEmptyOption(),
+                created: metadata.Created,
+                version: v
+            ));
+        }
+
+        private static ITry<Amount, IEnumerable<string>> ParseReportedValue(Dto.Archive archive, ArchiveMetadata metadata)
+        {
+            return metadata.Version.Match(
+                ArchiveVersion.v100, _ => GetReportedValuev1(archive),
+                ArchiveVersion.v120, _ => GetReportedValuev1(archive),
+                ArchiveVersion.v400, _ =>
                 {
-                    TaxRate = ParseDecimal(l[4]),
-                    TaxValue = ParseDecimal(l[10])
-                });
-                var lines = data.GroupBy(l => l.TaxRate).ToDictionary(
-                    g => new TaxRate(g.Key),
-                    g => new Model.Amount(Currencies.Euro, g.Sum(v => v.TaxValue))
-                );
-                return new TaxSummary(lines);
-            });
-        }
-
-        private static ITry<Amount, string> GetV1ReportedValue(Archive archive)
-        {
-            return archive.ProcessEntry("TOTALS", e =>
-            {
-                var data = GetCsvData(e.Content, v => Decimal.Parse(v[3], CultureInfo.InvariantCulture));
-                return new Amount(Currencies.Euro, data.Sum());
-            });
-        }
-
-        private static ITry<TaxSummary, string> GetV4TaxSummary(Archive archive)
-        {
-            return archive.ProcessEntry("INVOICE_FOOTER", e =>
-            {
-                var taxBreakdownNet = GetCsvData(e.Content, v => ParseLineTaxSummary(v[1]));
-                var taxBreakdownTax = GetCsvData(e.Content, v => ParseLineTaxSummary(v[2]));
-                return TaxSummary.Sum(taxBreakdownNet.Concat(taxBreakdownTax));
-            });
-        }
-
-        private static ITry<Amount, string> GetV4ReportedValue(Archive archive)
-        {
-            return archive.ProcessEntry("INVOICE_FOOTER", e =>
-            {
-                var values = GetCsvData(e.Content, v => ParseAmount(v[18]));
-                return Amount.Sum(values.ToArray());
-            });
-        }
-
-        private static TaxSummary ParseLineTaxSummary(string value)
-        {
-            var values = value.Split('|');
-            var data = values.Select(v =>
-            {
-                var parts = v.Split(':');
-                var percentage = ParseDecimal(parts[0].TrimEnd('%').Trim()) / 100;
-                var currencyValue = ParseAmount(parts[1]);
-                return (percentage, currencyValue);
-            });
-            var valuesByTaxRatePercentage = data.GroupBy(d => d.percentage);
-            var valueByTaxRate = valuesByTaxRatePercentage.ToDictionary(
-                g => new TaxRate(g.Key),
-                g => Model.Amount.Sum(g.Select(i => i.currencyValue))
+                    var values = archive.InvoiceFooter.Rows.Select(row => ParseAmount(row.Values[18]));
+                    return Try.Aggregate(values).Map(v => Amount.Sum(v));
+                }
             );
-            return new TaxSummary(valueByTaxRate);
         }
 
-        private static IReadOnlyList<T> GetCsvData<T>(string source, Func<string[], T> converter)
+        private static ITry<Amount, IEnumerable<string>> GetReportedValuev1(Dto.Archive archive)
         {
-            var lines = source.Split('\n').Skip(1).Where(l => !String.IsNullOrWhiteSpace(l));
-            return lines.Select(l => converter(l.Split(';'))).ToList();
+            var data = archive.Totals.Rows.Select(row => Decimal.Parse(row.Values[3], CultureInfo.InvariantCulture));
+            return Amount.Create(data.Sum(), "EUR");
         }
 
-        public static Amount ParseAmount(string stringValue)
+        private static ITry<Amount, string> ParseAmount(string stringValue)
         {
             var tokens = stringValue.Split('\u00A0', ' ').Where(t => !String.IsNullOrWhiteSpace(t)).ToList();
             return tokens.Count.Match(
-                2, _ =>
-                {
-                    var value = ParseDecimal(tokens[0]);
-                    var currency = Currencies.GetBySymbolOrCode(tokens[1].Trim()).Get(e => new Exception(e));
-                    return new Amount(currency, value);
-                },
-                _ => throw new ArgumentException($"Invalid {nameof(Amount)}.", nameof(stringValue))
+                2, _ => ParseDecimal(tokens[0]).FlatMap(value => Amount.Create(value: value, currencyCodeOrSymbol: tokens[1].Trim())),
+                _ => Try.Error<Amount, string>($"Invalid {nameof(Amount)}.")
             );
         }
 
-        public static decimal ParseDecimal(string value)
+        private static ITry<decimal, string> ParseDecimal(string value)
         {
-            return Decimal.Parse(value.Replace('.', ',').Trim(), FrenchCulture);
+            return Try.Create<decimal, Exception>(_ => Decimal.Parse(value.Replace('.', ',').Trim(), FrenchCulture)).MapError(e => "Invalid number.");
         }
     }
 }

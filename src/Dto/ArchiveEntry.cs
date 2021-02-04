@@ -1,4 +1,4 @@
-namespace Mews.Fiscalization.SignatureChecker
+namespace Mews.Fiscalization.SignatureChecker.Dto
 {
     internal sealed class ArchiveEntry
     {

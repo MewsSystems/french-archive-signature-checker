@@ -7,30 +7,25 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 {
     internal sealed class Amount
     {
-        public Amount(Currency currency, decimal value)
+        private Amount(decimal value)
         {
-            Currency = currency;
             Value = value;
         }
 
-        public Currency Currency { get; }
-
         public decimal Value { get; }
 
-        public string ToSignatureString()
+        public static ITry<Amount, IEnumerable<string>> Create(decimal value, string currencyCodeOrSymbol)
         {
-            return ((int)(Value * Currency.NormalizationConstant)).ToString();
-        }
-
-        public static Amount Sum(params Amount[] values)
-        {
-            var currency = values.Select(v => v.Currency).Distinct().SingleOption().Get(_ => new ArgumentException("All values need to be in the same currency."));
-            return new Amount(currency, values.Sum(v => v.Value));
+            return currencyCodeOrSymbol.Match(
+                "€", _ => Try.Success<Amount, IEnumerable<string>>(new Amount(value)),
+                "EUR", _ => Try.Success<Amount, IEnumerable<string>>(new Amount(value)),
+                _ => Try.Error<Amount, IEnumerable<string>>("Currency not found.".ToEnumerable())
+            );
         }
 
         public static Amount Sum(IEnumerable<Amount> values)
         {
-            return Sum(values.ToArray());
+            return new Amount(values.Sum(v => v.Value));
         }
     }
 }
