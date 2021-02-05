@@ -30,7 +30,6 @@ namespace Mews.Fiscalization.SignatureChecker.Model
             {
                 var version = metadata.Version.Match(
                     "1.0", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v100),
-                    "1.2", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v120),
                     "4.0", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v400),
                     _ => Try.Error<ArchiveVersion, IEnumerable<string>>("Archive version is not supported.".ToEnumerable())
                 );

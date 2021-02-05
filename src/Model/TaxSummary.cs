@@ -17,7 +17,6 @@ namespace Mews.Fiscalization.SignatureChecker.Model
         {
             return version.Match(
                 ArchiveVersion.v100, _ => GetV1TaxSummary(archive),
-                ArchiveVersion.v120, _ => GetV1TaxSummary(archive),
                 ArchiveVersion.v400, _ => GetV4TaxSummary(archive)
             );
         }
