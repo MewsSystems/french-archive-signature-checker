@@ -27,12 +27,22 @@ namespace Mews.SignatureChecker
 
         private static ITry<bool, string> IsArchiveValid(Archive archive)
         {
-            return ComputeSignature(archive).Map(computedSignature =>
+            return ComputeSignature(archive).FlatMap(computedSignature =>
             {
                 var xmlKey = File.ReadAllText("PublicKey.xml");
                 var rsa = new RSACryptoServiceProvider();
                 rsa.FromXmlString(xmlKey);
-                return rsa.VerifyData(computedSignature, archive.Signature, archive.Metadata.HashAlgorithmName, RSASignaturePadding.Pkcs1);
+
+                if (Version.TryParse(archive.Metadata.Version, out var version))
+                {
+                    var hashAlgorithm = version.Major.Match(
+                        1, _ => HashAlgorithmName.SHA1,
+                        _ => HashAlgorithmName.SHA256
+                    );
+                    return Try.Success<bool, string>(rsa.VerifyData(computedSignature, archive.Signature, hashAlgorithm, RSASignaturePadding.Pkcs1));
+                }
+
+                return Try.Error<bool, string>("Invalid metadata version, the format must match (major.minor[.build[.revision]]).");
             });
         }
 
