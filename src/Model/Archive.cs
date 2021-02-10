@@ -21,7 +21,13 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         public ReportedValue ReportedValue { get; }
 
-        public static ITry<Archive, IEnumerable<string>> Create(Dto.Archive archive)
+        public static ITry<Archive, IEnumerable<string>> Create(IReadOnlyList<Dto.File> files)
+        {
+            var archive = Dto.ArchiveReader.CompileArchive(files);
+            return archive.FlatMap(c => Parse(c));
+        }
+
+        public static ITry<Archive, IEnumerable<string>> Parse(Dto.Archive archive)
         {
             return ArchiveMetadata.Create(archive).FlatMap(metadata =>
             {

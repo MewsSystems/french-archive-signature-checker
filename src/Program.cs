@@ -13,9 +13,8 @@ namespace Mews.Fiscalization.SignatureChecker
         public static void Main(string[] args)
         {
             var path = args.SingleOption().ToTry(_ => "Invalid arguments".ToEnumerable());
-            var archiveEntries = path.FlatMap(p => ZipFileReader.Read(p));
-            var archiveFileContent = archiveEntries.FlatMap(e => ArchiveReader.ReadArchive(e));
-            var archive = archiveFileContent.FlatMap(a => Archive.Create(a));
+            var archiveFiles = path.FlatMap(p => ZipFileReader.Read(p));
+            var archive = archiveFiles.FlatMap(files => Archive.Create(files));
 
             var result = archive.Match(
                 a => IsArchiveValid(a).Match(
@@ -53,7 +52,7 @@ namespace Mews.Fiscalization.SignatureChecker
                 archive.Metadata.TerminalIdentification,
                 operationName,
                 previousSignatureFlag,
-                archive.Metadata.PreviousRecordSignature.GetOrElse("")
+                archive.Metadata.PreviousRecordSignature.Map(s => s.Base64UrlString).GetOrElse("")
             };
             return Encoding.UTF8.GetBytes(String.Join(",", signatureProperties));
         }
