@@ -32,7 +32,12 @@ namespace Mews.Fiscalization.SignatureChecker
             var xmlKey = File.ReadAllText("PublicKey.xml");
             var rsa = new RSACryptoServiceProvider();
             rsa.FromXmlString(xmlKey);
-            return rsa.VerifyData(computedSignature, archive.Signature.Value, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+
+            var hashAlgorithmName = archive.Metadata.Version.Match(
+                ArchiveVersion.v100, _ => HashAlgorithmName.SHA1,
+                ArchiveVersion.v400, _ => HashAlgorithmName.SHA256
+            );
+            return rsa.VerifyData(computedSignature, archive.Signature.Value, hashAlgorithmName, RSASignaturePadding.Pkcs1);
         }
 
         private static byte[] ComputeSignature(Archive archive)
