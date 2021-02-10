@@ -1,8 +1,7 @@
 using System;
-using FuncSharp;
 using Newtonsoft.Json;
 
-namespace Mews.SignatureChecker
+namespace Mews.Fiscalization.SignatureChecker.Dto
 {
     internal sealed class ArchiveMetadata
     {
@@ -10,14 +9,14 @@ namespace Mews.SignatureChecker
         public ArchiveMetadata(string terminalIdentification, string previousRecordSignature, DateTime created, string version)
         {
             TerminalIdentification = terminalIdentification;
-            PreviousRecordSignature = previousRecordSignature.ToNonEmptyOption();
+            PreviousRecordSignature = previousRecordSignature;
             Created = created;
             Version = version;
         }
 
         public string TerminalIdentification { get; }
 
-        public IOption<string> PreviousRecordSignature { get; }
+        public string PreviousRecordSignature { get; }
 
         public DateTime Created { get; }
 

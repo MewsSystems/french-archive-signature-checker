@@ -1,7 +1,7 @@
 using System;
 using FuncSharp;
 
-namespace Mews.SignatureChecker
+namespace Mews.Fiscalization.SignatureChecker.Model
 {
     internal sealed class TaxRate : Product1<decimal>, IComparable<TaxRate>
     {
@@ -10,15 +10,9 @@ namespace Mews.SignatureChecker
         {
         }
 
-        private decimal Value
+        public decimal Value
         {
             get { return ProductValue1; }
-        }
-
-        public string ToSignatureString()
-        {
-            var rateNormalizationConstant = 100 * 100;
-            return ((int)(Value * rateNormalizationConstant)).ToString().PadLeft(4, '0');
         }
 
         public int CompareTo(TaxRate other)
