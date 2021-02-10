@@ -1,8 +1,8 @@
 namespace Mews.Fiscalization.SignatureChecker.Dto
 {
-    internal sealed class ArchiveEntry
+    internal sealed class File
     {
-        public ArchiveEntry(string name, string content)
+        public File(string name, string content)
         {
             Name = name;
             Content = content;

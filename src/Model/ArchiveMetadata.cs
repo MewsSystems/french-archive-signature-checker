@@ -7,7 +7,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 {
     internal sealed class ArchiveMetadata
     {
-        private ArchiveMetadata(string terminalIdentification, IOption<string> previousRecordSignature, DateTime created, ArchiveVersion version)
+        private ArchiveMetadata(string terminalIdentification, IOption<Signature> previousRecordSignature, DateTime created, ArchiveVersion version)
         {
             TerminalIdentification = terminalIdentification;
             PreviousRecordSignature = previousRecordSignature;
@@ -17,7 +17,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         public string TerminalIdentification { get; }
 
-        public IOption<string> PreviousRecordSignature { get; }
+        public IOption<Signature> PreviousRecordSignature { get; }
 
         public DateTime Created { get; }
 
@@ -33,12 +33,15 @@ namespace Mews.Fiscalization.SignatureChecker.Model
                     "4.0", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v400),
                     _ => Try.Error<ArchiveVersion, IEnumerable<string>>("Archive version is not supported.".ToEnumerable())
                 );
-                return version.Map(v => new ArchiveMetadata(
-                    terminalIdentification: metadata.TerminalIdentification,
-                    previousRecordSignature: metadata.PreviousRecordSignature.ToNonEmptyOption(),
-                    created: metadata.Created,
-                    version: v
-                ));
+                var previousRecordSignature = metadata.PreviousRecordSignature.ToOption().Match(
+                    s => Signature.Create(s),
+                    _ => Try.Success<Signature, IEnumerable<string>>(null)
+                );
+                return Try.Aggregate(
+                    version,
+                    previousRecordSignature,
+                    (v, s) => new ArchiveMetadata(metadata.TerminalIdentification, s.ToOption(), metadata.Created, v)
+                );
             });
         }
     }

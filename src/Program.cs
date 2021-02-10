@@ -13,7 +13,7 @@ namespace Mews.Fiscalization.SignatureChecker
         public static void Main(string[] args)
         {
             var path = args.SingleOption().ToTry(_ => "Invalid arguments".ToEnumerable());
-            var archiveEntries = path.FlatMap(p => ZipArchiveReader.ReadArchive(p));
+            var archiveEntries = path.FlatMap(p => ZipFileReader.Read(p));
             var archiveFileContent = archiveEntries.FlatMap(e => ArchiveReader.ReadArchive(e));
             var archive = archiveFileContent.FlatMap(a => Archive.Create(a));
 
