@@ -44,7 +44,6 @@ namespace Mews.Fiscalization.SignatureChecker
         {
             var taxSummary = archive.TaxSummary;
             var reportedValue = archive.ReportedValue;
-            var operationName = "ARCHIVING";
             var previousSignatureFlag = archive.Metadata.PreviousRecordSignature.Match(
                 _ => "Y",
                 _ => "N"
@@ -55,7 +54,7 @@ namespace Mews.Fiscalization.SignatureChecker
                 reportedValue.Value.ToSignatureString(),
                 archive.Metadata.Created.ToSignatureString(),
                 archive.Metadata.TerminalIdentification,
-                operationName,
+                archive.Metadata.ArchiveType,
                 previousSignatureFlag,
                 archive.Metadata.PreviousRecordSignature.Map(s => s.Base64UrlString).GetOrElse("")
             };
