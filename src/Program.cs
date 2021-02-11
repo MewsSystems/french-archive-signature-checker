@@ -48,13 +48,17 @@ namespace Mews.Fiscalization.SignatureChecker
                 _ => "Y",
                 _ => "N"
             );
+            var archiveType = archive.Metadata.Version.Match(
+                ArchiveVersion.v100, _ => "ARCHIVING",
+                ArchiveVersion.v400, _ => archive.Metadata.ArchiveType
+            );
             var signatureProperties = new List<string>
             {
                 taxSummary.ToSignatureString(),
                 reportedValue.Value.ToSignatureString(),
                 archive.Metadata.Created.ToSignatureString(),
                 archive.Metadata.TerminalIdentification,
-                archive.Metadata.ArchiveType,
+                archiveType,
                 previousSignatureFlag,
                 archive.Metadata.PreviousRecordSignature.Map(s => s.Base64UrlString).GetOrElse("")
             };
