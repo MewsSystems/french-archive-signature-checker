@@ -50,7 +50,7 @@ namespace Mews.Fiscalization.SignatureChecker
             );
             var archiveType = archive.Metadata.Version.Match(
                 ArchiveVersion.v100, _ => "ARCHIVING",
-                ArchiveVersion.v400, _ => archive.Metadata.ArchiveType
+                ArchiveVersion.v400, _ => archive.Metadata.ArchiveType.GetOrElse("")
             );
             var signatureProperties = new List<string>
             {

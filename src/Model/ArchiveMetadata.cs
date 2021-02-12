@@ -7,13 +7,13 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 {
     internal sealed class ArchiveMetadata
     {
-        private ArchiveMetadata(string terminalIdentification, IOption<Signature> previousRecordSignature, DateTime created, ArchiveVersion version, string archiveType)
+        private ArchiveMetadata(string terminalIdentification, IOption<Signature> previousRecordSignature, DateTime created, ArchiveVersion version, string archiveType = null)
         {
             TerminalIdentification = terminalIdentification;
             PreviousRecordSignature = previousRecordSignature;
             Created = created;
             Version = version;
-            ArchiveType = archiveType;
+            ArchiveType = archiveType.ToOption();
         }
 
         public string TerminalIdentification { get; }
@@ -24,7 +24,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         public ArchiveVersion Version { get; }
 
-        public string ArchiveType { get; }
+        public IOption<string> ArchiveType { get; }
 
         public static ITry<ArchiveMetadata, IEnumerable<string>> Create(Dto.Archive archive)
         {
