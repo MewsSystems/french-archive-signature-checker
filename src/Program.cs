@@ -54,7 +54,7 @@ namespace Mews.Fiscalization.SignatureChecker
                 reportedValue.Value.ToSignatureString(),
                 archive.Metadata.Created.ToSignatureString(),
                 archive.Metadata.TerminalIdentification,
-                archive.Metadata.ArchiveType.Map(t => t.ToString().ToUpperInvariant()).GetOrElse(""),
+                archive.Metadata.ArchiveType.ToString().ToUpperInvariant(),
                 previousSignatureFlag,
                 archive.Metadata.PreviousRecordSignature.Map(s => s.Base64UrlString).GetOrElse("")
             };
