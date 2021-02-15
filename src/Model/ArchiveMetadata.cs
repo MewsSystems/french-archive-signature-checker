@@ -7,7 +7,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 {
     internal sealed class ArchiveMetadata
     {
-        private ArchiveMetadata(string terminalIdentification, IOption<Signature> previousRecordSignature, DateTime created, ArchiveVersion version, string archiveType = null)
+        private ArchiveMetadata(string terminalIdentification, IOption<Signature> previousRecordSignature, DateTime created, ArchiveVersion version, ArchiveType? archiveType = null)
         {
             TerminalIdentification = terminalIdentification;
             PreviousRecordSignature = previousRecordSignature;
@@ -24,7 +24,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         public ArchiveVersion Version { get; }
 
-        public IOption<string> ArchiveType { get; }
+        public IOption<ArchiveType> ArchiveType { get; }
 
         public static ITry<ArchiveMetadata, IEnumerable<string>> Create(Dto.Archive archive)
         {
@@ -36,13 +36,15 @@ namespace Mews.Fiscalization.SignatureChecker.Model
                     "4.0", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v400),
                     _ => Try.Error<ArchiveVersion, IEnumerable<string>>("Archive version is not supported.".ToEnumerable())
                 );
-                var archiveType = metadata.ArchiveType.ToOption().Match(
-                    type => version.FlatMap(v => v.Match(
-                        ArchiveVersion.v100, _ => type.Equals("ARCHIVING").ToTry(t => type, f => $"Archive version {v} must have archive type: ARCHIVING".ToEnumerable()),
-                        ArchiveVersion.v400, _ => Try.Success<string, IEnumerable<string>>(type)
-                    )),
-                    _ => Try.Error<string, IEnumerable<string>>($"{metadata.ArchiveType} is missing.".ToEnumerable())
-                );
+                var archiveType = version.FlatMap(v => v.Match(
+                    ArchiveVersion.v100, u => Try.Success<ArchiveType, IEnumerable<string>>(Model.ArchiveType.Archiving),
+                    ArchiveVersion.v400, u => metadata.ArchiveType.Match(
+                        "DAY", _ => Try.Success<ArchiveType, IEnumerable<string>>(Model.ArchiveType.Day),
+                        "MONTH", _ => Try.Success<ArchiveType, IEnumerable<string>>(Model.ArchiveType.Month),
+                        "FISCALYEAR", _ => Try.Success<ArchiveType, IEnumerable<string>>(Model.ArchiveType.FiscalYear),
+                        _ => Try.Error<ArchiveType, IEnumerable<string>>($"{nameof(Model.ArchiveType)} is not supported.".ToEnumerable())
+                    )
+                ));
                 var previousRecordSignature = metadata.PreviousRecordSignature.ToOption().Match(
                     s => Signature.Create(s),
                     _ => Try.Success<Signature, IEnumerable<string>>(null)
