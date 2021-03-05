@@ -19,5 +19,10 @@ namespace Mews.Fiscalization.SignatureChecker.Model
         {
             return Value.CompareTo(other.Value);
         }
+
+        public override string ToString()
+        {
+            return $"{(Value * 100)} %";
+        }
     }
 }
