@@ -9,7 +9,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
     internal static class Parser
     {
         private static readonly CultureInfo FrenchCulture = new CultureInfo("fr-FR");
-        private static readonly Regex AmountRegex = new Regex(@"([-−]?[\d\s\\.,]*[\d\\.,])\s*([^\d\s\.]+)$");
+        private static readonly Regex AmountRegex = new Regex(@"([-−]?[\d\s\\.,]*[\d\\.,])\s*([^\d\s\.]+)?");
 
         public static ITry<decimal, IEnumerable<string>> ParseDecimal(string value)
         {
