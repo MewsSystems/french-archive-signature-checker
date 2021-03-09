@@ -26,5 +26,10 @@ namespace Mews.Fiscalization.SignatureChecker.Model
         {
             return new Amount(values.Sum(v => v.Value));
         }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 }
