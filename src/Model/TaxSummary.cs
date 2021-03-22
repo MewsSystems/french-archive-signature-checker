@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FuncSharp;
@@ -66,7 +67,8 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         private static ITry<TaxSummary, IEnumerable<string>> ParseLineTaxSummary(string value)
         {
-            var parsedValues = value.Split('|').Select(v =>
+            var rawValues = value.Split('|').Where(v => !String.IsNullOrEmpty(v));
+            var parsedValues = rawValues.Select(v =>
             {
                 var parts = v.Split(':');
                 var percentage = Parser.ParseDecimal(parts[0].TrimEnd('%').Trim());
