@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net471;</TargetFrameworks>
     <OutputType>Exe</OutputType>
+    <PackageVersion>1.0.5</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
