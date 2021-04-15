@@ -16,7 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="PublicKey.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="ProductionPublicKey.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="DevelopPublicKey.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
