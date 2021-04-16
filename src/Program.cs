@@ -36,22 +36,11 @@ namespace Mews.Fiscalization.SignatureChecker
 
         private static RSACryptoServiceProvider GetCryptoServiceProvider(IEnumerable<string> optionArguments)
         {
-            var useDevelopKey = optionArguments.Contains("--develop", StringComparer.InvariantCultureIgnoreCase);
-            var fileName = useDevelopKey.Match(
-                t => "DevelopPublicKey.xml",
-                f => "ProductionPublicKey.xml"
+            var useDevelopProvider = optionArguments.Contains("--develop", StringComparer.InvariantCultureIgnoreCase);
+            return useDevelopProvider.Match(
+                t => CryptoServiceProvider.GetDevelop(),
+                f => CryptoServiceProvider.GetProduction()
             );
-            try
-            {
-                var xmlKey = File.ReadAllText(fileName);
-                var rsa = new RSACryptoServiceProvider();
-                rsa.FromXmlString(xmlKey);
-                return rsa;
-            }
-            catch
-            {
-                throw new InvalidOperationException("Key is either missing or invalid.");
-            }
         }
 
         private static bool IsArchiveValid(Archive archive, RSACryptoServiceProvider cryptoServiceProvider)
