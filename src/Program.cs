@@ -21,32 +21,37 @@ namespace Mews.Fiscalization.SignatureChecker
 
             var cryptoServiceProvider = GetCryptoServiceProvider(optionArguments);
 
-            var result = Try.Aggregate(
-                archive,
-                cryptoServiceProvider,
-                (a, rsa) => IsArchiveValid(a, rsa).Match(
-                    t => "Archive signature IS valid.",
-                    f => "Archive signature IS NOT valid."
-                )
+            var result = archive.Match(
+                a =>
+                {
+                    return IsArchiveValid(a, cryptoServiceProvider).Match(
+                        t => "Archive signature IS valid.",
+                        f => "Archive signature IS NOT valid."
+                    );
+                },
+                e => e.MkLines()
             );
-            Console.WriteLine(result.Match(r => r, e => e.MkLines()));
+            Console.WriteLine(result);
         }
 
-        private static ITry<RSACryptoServiceProvider, IEnumerable<string>> GetCryptoServiceProvider(IEnumerable<string> optionArguments)
+        private static RSACryptoServiceProvider GetCryptoServiceProvider(IEnumerable<string> optionArguments)
         {
             var useDevelopKey = optionArguments.Contains("--develop", StringComparer.InvariantCultureIgnoreCase);
             var fileName = useDevelopKey.Match(
                 t => "DevelopPublicKey.xml",
                 f => "ProductionPublicKey.xml"
             );
-            var cryptoServiceProvider = Try.Create<RSACryptoServiceProvider, Exception>(_ =>
+            try
             {
                 var xmlKey = File.ReadAllText(fileName);
                 var rsa = new RSACryptoServiceProvider();
                 rsa.FromXmlString(xmlKey);
                 return rsa;
-            });
-            return cryptoServiceProvider.MapError(_ => "Missing or invalid key.".ToEnumerable());
+            }
+            catch
+            {
+                throw new InvalidOperationException("Key is either missing or invalid.");
+            }
         }
 
         private static bool IsArchiveValid(Archive archive, RSACryptoServiceProvider cryptoServiceProvider)
