@@ -38,5 +38,17 @@ namespace Mews.Fiscalization.SignatureChecker
             var rateNormalizationConstant = 100 * 100;
             return ((int)(taxRate.Value * rateNormalizationConstant)).ToString().PadLeft(4, '0');
         }
+
+        public static Tuple<IReadOnlyCollection<T>, IReadOnlyCollection<T>> Partition<T>(this IEnumerable<T> e, Func<T, bool> predicate)
+        {
+            var passing = new List<T>();
+            var violating = new List<T>();
+            foreach (var i in e)
+            {
+                (predicate(i) ? passing : violating).Add(i);
+            }
+            return Tuple.Create<IReadOnlyCollection<T>, IReadOnlyCollection<T>>(passing, violating);
+        }
+
     }
 }

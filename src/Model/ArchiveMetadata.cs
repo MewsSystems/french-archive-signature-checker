@@ -37,11 +37,11 @@ namespace Mews.Fiscalization.SignatureChecker.Model
                     _ => Try.Error<ArchiveVersion, IEnumerable<string>>("Archive version is not supported.".ToEnumerable())
                 );
                 var archiveType = version.FlatMap(v => v.Match(
-                    ArchiveVersion.v100, u => Try.Success<ArchiveType, IEnumerable<string>>(Model.ArchiveType.Archiving),
+                    ArchiveVersion.v100, u => Try.Success<ArchiveType, IEnumerable<string>>(ArchiveType.Archiving),
                     ArchiveVersion.v400, u => metadata.ArchiveType.Match(
-                        "DAY", _ => Try.Success<ArchiveType, IEnumerable<string>>(Model.ArchiveType.Day),
-                        "MONTH", _ => Try.Success<ArchiveType, IEnumerable<string>>(Model.ArchiveType.Month),
-                        "FISCALYEAR", _ => Try.Success<ArchiveType, IEnumerable<string>>(Model.ArchiveType.FiscalYear),
+                        "DAY", _ => Try.Success<ArchiveType, IEnumerable<string>>(ArchiveType.Day),
+                        "MONTH", _ => Try.Success<ArchiveType, IEnumerable<string>>(ArchiveType.Month),
+                        "FISCALYEAR", _ => Try.Success<ArchiveType, IEnumerable<string>>(ArchiveType.FiscalYear),
                         _ => Try.Error<ArchiveType, IEnumerable<string>>($"{nameof(Model.ArchiveType)} is not supported.".ToEnumerable())
                     )
                 ));
