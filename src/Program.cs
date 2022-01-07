@@ -48,7 +48,8 @@ namespace Mews.Fiscalization.SignatureChecker
             var computedSignature = ComputeSignature(archive);
             var hashAlgorithmName = archive.Metadata.Version.Match(
                 ArchiveVersion.v100, _ => HashAlgorithmName.SHA1,
-                ArchiveVersion.v400, _ => HashAlgorithmName.SHA256
+                ArchiveVersion.v400, _ => HashAlgorithmName.SHA256,
+                ArchiveVersion.v410, _ => HashAlgorithmName.SHA256
             );
             return cryptoServiceProvider.VerifyData(computedSignature, archive.Signature.Value, hashAlgorithmName, RSASignaturePadding.Pkcs1);
         }

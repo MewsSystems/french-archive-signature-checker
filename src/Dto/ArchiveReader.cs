@@ -27,7 +27,7 @@ namespace Mews.Fiscalization.SignatureChecker.Dto
             return GetOptionalEntry(files, namePrefix).ToTry(_ => $"No unique file found {namePrefix}*.".ToEnumerable());
         }
 
-        private static IOption<File> GetOptionalEntry(IReadOnlyList<File> files, string namePrefix, bool isOptional = false)
+        private static IOption<File> GetOptionalEntry(IReadOnlyList<File> files, string namePrefix)
         {
             return files.SingleOption(e => e.Name.StartsWith(namePrefix));
         }
