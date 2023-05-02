@@ -35,12 +35,14 @@ namespace Mews.Fiscalization.SignatureChecker.Model
                     "1.0", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v100),
                     "4.0", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v400),
                     "4.1", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v410),
+                    "4.2", _ => Try.Success<ArchiveVersion, IEnumerable<string>>(ArchiveVersion.v420),
                     _ => Try.Error<ArchiveVersion, IEnumerable<string>>("Archive version is not supported.".ToEnumerable())
                 );
                 var archiveType = version.FlatMap(v => v.Match(
                     ArchiveVersion.v100, u => Try.Success<ArchiveType, IEnumerable<string>>(ArchiveType.Archiving),
                     ArchiveVersion.v400, u => ParseVersion4ArchiveType(metadata),
-                    ArchiveVersion.v410, u => ParseVersion4ArchiveType(metadata)
+                    ArchiveVersion.v410, u => ParseVersion4ArchiveType(metadata),
+                    ArchiveVersion.v420, u => ParseVersion4ArchiveType(metadata)
                 ));
                 var previousRecordSignature = metadata.PreviousRecordSignature.ToOption().Match(
                     s => Signature.Create(s),

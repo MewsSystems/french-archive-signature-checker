@@ -18,7 +18,8 @@ namespace Mews.Fiscalization.SignatureChecker.Model
             var reportedValue = version.Match(
                 ArchiveVersion.v100, _ => GetReportedValueV1(archive),
                 ArchiveVersion.v400, _ => GetReportedValueV4(archive),
-                ArchiveVersion.v410, _ => GetReportedValueV4(archive)
+                ArchiveVersion.v410, _ => GetReportedValueV4(archive),
+                ArchiveVersion.v420, _ => GetReportedValueV4(archive)
             );
 
             return reportedValue.Map(value => new ReportedValue(value));
