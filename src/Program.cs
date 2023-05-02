@@ -53,7 +53,7 @@ namespace Mews.Fiscalization.SignatureChecker
                 ArchiveVersion.v100, _ => HashAlgorithmName.SHA1,
                 ArchiveVersion.v400, _ => HashAlgorithmName.SHA256,
                 ArchiveVersion.v410, _ => HashAlgorithmName.SHA256,
-                ArchiveVersion.v420, _ => HashAlgorithmName.SHA256
+                ArchiveVersion.v411, _ => HashAlgorithmName.SHA256
             );
             return cryptoServiceProvider.VerifyData(computedSignature, archive.Signature.Value, hashAlgorithmName, RSASignaturePadding.Pkcs1);
         }
@@ -61,7 +61,7 @@ namespace Mews.Fiscalization.SignatureChecker
         private static byte[] ComputeSignature(Archive archive, IEnumerable<Dto.File> files)
         {
             var archiveFilesContentHash = archive.Metadata.Version.Match(
-                ArchiveVersion.v420, _ =>
+                ArchiveVersion.v411, _ =>
                 {
                     var applicableFiles = files.Where(f => f.Name.Contains(".csv") || f.Name.Contains(".html"));
                     var allFilesBytes = applicableFiles.SelectMany(f => Encoding.UTF8.GetBytes(f.Content));

@@ -20,7 +20,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
                 ArchiveVersion.v100, _ => GetV1TaxSummary(archive),
                 ArchiveVersion.v400, _ => GetV4TaxSummary(archive),
                 ArchiveVersion.v410, _ => GetV4TaxSummary(archive),
-                ArchiveVersion.v420, _ => GetV4TaxSummary(archive)
+                ArchiveVersion.v411, _ => GetV4TaxSummary(archive)
             );
         }
 

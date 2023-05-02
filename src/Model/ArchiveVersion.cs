@@ -5,6 +5,6 @@ namespace Mews.Fiscalization.SignatureChecker.Model
         v100,
         v400,
         v410,
-        v420
+        v411
     }
 }
