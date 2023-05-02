@@ -60,7 +60,7 @@ namespace Mews.Fiscalization.SignatureChecker
 
         private static byte[] ComputeSignature(Archive archive, IEnumerable<Dto.File> files)
         {
-            var hash = archive.Metadata.Version.Match(
+            var archiveFilesContentHash = archive.Metadata.Version.Match(
                 ArchiveVersion.v420, _ =>
                 {
                     var applicableFiles = files.Where(f => f.Name.Contains(".csv") || f.Name.Contains(".html"));
@@ -83,7 +83,7 @@ namespace Mews.Fiscalization.SignatureChecker
                 archive.Metadata.Created.ToSignatureString(),
                 archive.Metadata.TerminalIdentification,
                 archive.Metadata.ArchiveType.ToString().ToUpperInvariant(),
-                hash.Map(h => Convert.ToBase64String(h)).GetOrElse(""),
+                archiveFilesContentHash.Map(h => Convert.ToBase64String(h)).GetOrElse(""),
                 previousSignatureFlag,
                 archive.Metadata.PreviousRecordSignature.Map(s => s.Base64UrlString).GetOrElse("")
             };
