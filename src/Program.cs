@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -53,7 +52,8 @@ namespace Mews.Fiscalization.SignatureChecker
             var hashAlgorithmName = archive.Metadata.Version.Match(
                 ArchiveVersion.v100, _ => HashAlgorithmName.SHA1,
                 ArchiveVersion.v400, _ => HashAlgorithmName.SHA256,
-                ArchiveVersion.v410, _ => HashAlgorithmName.SHA256
+                ArchiveVersion.v410, _ => HashAlgorithmName.SHA256,
+                ArchiveVersion.v420, _ => HashAlgorithmName.SHA256
             );
             return cryptoServiceProvider.VerifyData(computedSignature, archive.Signature.Value, hashAlgorithmName, RSASignaturePadding.Pkcs1);
         }
@@ -63,7 +63,7 @@ namespace Mews.Fiscalization.SignatureChecker
             var hash = archive.Metadata.Version.Match(
                 ArchiveVersion.v420, _ =>
                 {
-                    var applicableFiles = files.Where(f => f.Name.Contains("csv") || f.Name.Contains("html"));
+                    var applicableFiles = files.Where(f => f.Name.Contains(".csv") || f.Name.Contains(".html"));
                     var allFilesBytes = applicableFiles.SelectMany(f => Encoding.UTF8.GetBytes(f.Content));
                     return SHA256.Create().ComputeHash(allFilesBytes.ToArray()).ToOption();
                 },
