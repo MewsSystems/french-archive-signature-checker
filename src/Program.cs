@@ -83,11 +83,11 @@ namespace Mews.Fiscalization.SignatureChecker
                 archive.Metadata.Created.ToSignatureString(),
                 archive.Metadata.TerminalIdentification,
                 archive.Metadata.ArchiveType.ToString().ToUpperInvariant(),
-                archiveFilesContentHash.Map(h => Convert.ToBase64String(h)).GetOrElse(""),
+                archiveFilesContentHash.Map(h => Convert.ToBase64String(h)).GetOrNull(),
                 previousSignatureFlag,
                 archive.Metadata.PreviousRecordSignature.Map(s => s.Base64UrlString).GetOrElse("")
             };
-            return Encoding.UTF8.GetBytes(String.Join(",", signatureProperties));
+            return Encoding.UTF8.GetBytes(String.Join(",", signatureProperties.Where(p => p != null)));
         }
     }
 }
