@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -17,21 +16,25 @@ namespace Mews.Fiscalization.SignatureChecker
 
             var archivePath = pathArguments.SingleOption().ToTry(_ => "Invalid arguments".ToEnumerable());
             var archiveFiles = archivePath.FlatMap(p => ZipFileReader.Read(p));
-            var archive = archiveFiles.FlatMap(files => Archive.Create(files));
+            var result = archiveFiles.FlatMap(files =>
+            {
+                var archive = Archive.Create(files);
+                var cryptoServiceProvider = GetCryptoServiceProvider(optionArguments);
 
-            var cryptoServiceProvider = GetCryptoServiceProvider(optionArguments);
-
-            var result = archive.Match(
-                a =>
+                return archive.Map(a =>
                 {
-                    return IsArchiveValid(a, cryptoServiceProvider).Match(
+                    var isArchiveValid = IsArchiveValid(a, cryptoServiceProvider, files);
+                    return isArchiveValid.Match(
                         t => "Archive signature IS valid.",
                         f => "Archive signature IS NOT valid."
                     );
-                },
-                e => e.MkLines()
+                });
+            });
+
+            result.Match(
+                r => Console.WriteLine(r),
+                errors =>  Console.WriteLine(errors.MkLines())
             );
-            Console.WriteLine(result);
         }
 
         private static RSACryptoServiceProvider GetCryptoServiceProvider(IEnumerable<string> optionArguments)
@@ -43,19 +46,30 @@ namespace Mews.Fiscalization.SignatureChecker
             );
         }
 
-        private static bool IsArchiveValid(Archive archive, RSACryptoServiceProvider cryptoServiceProvider)
+        private static bool IsArchiveValid(Archive archive, RSACryptoServiceProvider cryptoServiceProvider, IEnumerable<Dto.File> files)
         {
-            var computedSignature = ComputeSignature(archive);
+            var computedSignature = ComputeSignature(archive, files);
             var hashAlgorithmName = archive.Metadata.Version.Match(
                 ArchiveVersion.v100, _ => HashAlgorithmName.SHA1,
                 ArchiveVersion.v400, _ => HashAlgorithmName.SHA256,
-                ArchiveVersion.v410, _ => HashAlgorithmName.SHA256
+                ArchiveVersion.v410, _ => HashAlgorithmName.SHA256,
+                ArchiveVersion.v411, _ => HashAlgorithmName.SHA256
             );
             return cryptoServiceProvider.VerifyData(computedSignature, archive.Signature.Value, hashAlgorithmName, RSASignaturePadding.Pkcs1);
         }
 
-        private static byte[] ComputeSignature(Archive archive)
+        private static byte[] ComputeSignature(Archive archive, IEnumerable<Dto.File> files)
         {
+            var archiveFilesContentHash = archive.Metadata.Version.Match(
+                ArchiveVersion.v411, _ =>
+                {
+                    var applicableFiles = files.Where(f => f.Name.Contains(".csv") || f.Name.Contains(".html"));
+                    var allFilesBytes = applicableFiles.SelectMany(f => Encoding.UTF8.GetBytes(f.Content));
+                    return SHA256.Create().ComputeHash(allFilesBytes.ToArray()).ToOption();
+                },
+                _ => Option.Empty<byte[]>()
+            );
+
             var taxSummary = archive.TaxSummary;
             var reportedValue = archive.ReportedValue;
             var previousSignatureFlag = archive.Metadata.PreviousRecordSignature.Match(
@@ -69,6 +83,7 @@ namespace Mews.Fiscalization.SignatureChecker
                 archive.Metadata.Created.ToSignatureString(),
                 archive.Metadata.TerminalIdentification,
                 archive.Metadata.ArchiveType.ToString().ToUpperInvariant(),
+                archiveFilesContentHash.Map(h => Convert.ToBase64String(h)).GetOrElse(""),
                 previousSignatureFlag,
                 archive.Metadata.PreviousRecordSignature.Map(s => s.Base64UrlString).GetOrElse("")
             };
