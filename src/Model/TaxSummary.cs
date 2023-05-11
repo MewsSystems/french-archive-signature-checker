@@ -54,17 +54,19 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         private static ITry<TaxSummary, IEnumerable<string>> GetV4TaxSummary(Dto.Archive archive)
         {
-            var invoiceFooter = archive.InvoiceFooter.ToTry(_ => "Invoice footer file not found.".ToEnumerable());
-            return invoiceFooter.FlatMap(f =>
-            {
-                var taxBreakdownNet = Try.Aggregate(f.Rows.Select(row => ParseLineTaxSummary(row.Values[1])));
-                var taxBreakdownTax = Try.Aggregate(f.Rows.Select(row => ParseLineTaxSummary(row.Values[2])));
-                return Try.Aggregate(
-                    taxBreakdownNet,
-                    taxBreakdownTax,
-                    (net, tax) => TaxSummary.Sum(net.Concat(tax))
-                );
-            });
+            return archive.InvoiceFooters.ToNonEmptyOption().Match(
+                a =>
+                {
+                    var taxBreakdownNet = Try.Aggregate(a.SelectMany(f => f.Rows.Select(row => ParseLineTaxSummary(row.Values[1]))));
+                    var taxBreakdownTax = Try.Aggregate(a.SelectMany(f => f.Rows.Select(row => ParseLineTaxSummary(row.Values[2]))));
+                    return Try.Aggregate(
+                        taxBreakdownNet,
+                        taxBreakdownTax,
+                        (net, tax) => Sum(net.Concat(tax))
+                    );
+                },
+                _ => Try.Error<TaxSummary, IEnumerable<string>>("Invoice footer file/s not found.".ToEnumerable())
+            );
         }
 
         private static ITry<TaxSummary, IEnumerable<string>> ParseLineTaxSummary(string value)

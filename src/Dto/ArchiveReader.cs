@@ -13,18 +13,23 @@ namespace Mews.Fiscalization.SignatureChecker.Dto
             var signature = GetFile(files, "SIGNATURE.txt");
             var taxTotals = GetOptionalEntry(files, "TAX_TOTALS").Map(e => GetCsvData(e.Content));
             var totals = GetOptionalEntry(files, "TOTALS").Map(e => GetCsvData(e.Content));
-            var invoiceFooter = GetOptionalEntry(files, "INVOICE_FOOTER").Map(e => GetCsvData(e.Content));
+            var invoiceFooters = GetFiles(files, "INVOICE_FOOTER").Select(f => GetCsvData(f.Content));
 
             return Try.Aggregate(
                 metadata,
                 signature,
-                (m, s) => new Archive(metadata: m, signature: s, totals: totals, taxTotals: taxTotals, invoiceFooter: invoiceFooter)
+                (m, s) => new Archive(metadata: m, signature: s, totals: totals, taxTotals: taxTotals, invoiceFooters: invoiceFooters)
             );
         }
 
         private static ITry<File, IEnumerable<string>> GetFile(IReadOnlyList<File> files, string namePrefix)
         {
             return GetOptionalEntry(files, namePrefix).ToTry(_ => $"No unique file found {namePrefix}*.".ToEnumerable());
+        }
+
+        private static IEnumerable<File> GetFiles(IEnumerable<File> files, string namePrefix)
+        {
+            return files.Where(f => f.Name.StartsWith(namePrefix));
         }
 
         private static IOption<File> GetOptionalEntry(IReadOnlyList<File> files, string namePrefix)

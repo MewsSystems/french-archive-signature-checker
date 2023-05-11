@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using FuncSharp;
 
@@ -29,7 +30,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         public override string ToString()
         {
-            return Value.ToString();
+            return Value.ToString(CultureInfo.InvariantCulture);
         }
     }
 }

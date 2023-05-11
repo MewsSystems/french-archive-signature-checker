@@ -13,7 +13,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         public static ITry<decimal, IEnumerable<string>> ParseDecimal(string value)
         {
-            var isSuccess = Decimal.TryParse(value.Replace('.', ',').Replace('−', '-').Trim(), NumberStyles.Number, FrenchCulture, out var result);
+            var isSuccess = decimal.TryParse(Regex.Replace(value, @"\s+", "").Replace('.', ',').Replace('−', '-'), NumberStyles.Number, FrenchCulture, out var result);
             return isSuccess.ToTry(_ => result, _ => "Invalid number.".ToEnumerable());
         }
 

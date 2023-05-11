@@ -1,16 +1,18 @@
+using System.Collections.Generic;
+using System.Linq;
 using FuncSharp;
 
 namespace Mews.Fiscalization.SignatureChecker.Dto
 {
     internal class Archive
     {
-        internal Archive(File metadata, File signature, IOption<CsvData> totals, IOption<CsvData> taxTotals, IOption<CsvData> invoiceFooter)
+        internal Archive(File metadata, File signature, IOption<CsvData> totals, IOption<CsvData> taxTotals, IEnumerable<CsvData> invoiceFooters)
         {
             Metadata = metadata;
             Signature = signature;
             Totals = totals;
             TaxTotals = taxTotals;
-            InvoiceFooter = invoiceFooter;
+            InvoiceFooters = invoiceFooters.ToList();
         }
 
         public File Metadata { get; }
@@ -21,6 +23,6 @@ namespace Mews.Fiscalization.SignatureChecker.Dto
 
         public IOption<CsvData> TaxTotals { get; }
 
-        public IOption<CsvData> InvoiceFooter { get; }
+        public IReadOnlyList<CsvData> InvoiceFooters { get; }
     }
 }
