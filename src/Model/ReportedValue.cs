@@ -34,9 +34,14 @@ namespace Mews.Fiscalization.SignatureChecker.Model
 
         private static ITry<Amount, IEnumerable<string>> GetReportedValueV4(Dto.Archive archive)
         {
-            var invoiceFooter = archive.InvoiceFooter.ToTry(_ => "Invoice footer file not found.".ToEnumerable());
-            var values = invoiceFooter.FlatMap(i => Try.Aggregate(i.Rows.Select(row => Parser.ParseAmount(row.Values[18]))));
-            return values.Map(v => Amount.Sum(v));
+            return archive.InvoiceFooters.ToNonEmptyOption().Match(
+                footers =>
+                {
+                    var values = Try.Aggregate(footers.SelectMany(f => f.Rows.Select(row => Parser.ParseAmount(row.Values[18]))));
+                    return values.Map(v => Amount.Sum(v));
+                },
+                _ => Try.Error<Amount, IEnumerable<string>>("Invoice footer file/s not found.".ToEnumerable())
+            );
         }
     }
 }
