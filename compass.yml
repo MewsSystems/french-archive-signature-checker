@@ -1,0 +1,22 @@
+name: french-archive-signature-checker
+id: ari:cloud:compass:9cb80e14-6d83-4419-a743-3b8c78b0bf7f:component/4cc129c1-d8a1-41b8-bb4e-b20a5e598709/6a44a9d9-c763-463f-9324-f041aed4d138
+description: This is actually not the fiscal library, but only a tool to check the validity of the french fiscal archives.
+configVersion: 1
+typeId: SERVICE
+ownerId: null
+fields:
+  tier: 4
+links:
+  - name: null
+    type: REPOSITORY
+    url: https://github.com/MewsSystems/french-archive-signature-checker
+relationships:
+  DEPENDS_ON: []
+labels:
+  - france
+  - language:c#
+  - not-a-fiscalization
+  - signer
+  - source:github
+  - tech-be
+customFields: null
