@@ -1,10 +1,9 @@
-namespace Mews.Fiscalization.SignatureChecker.Model
+namespace Mews.Fiscalization.SignatureChecker.Model;
+
+internal enum ArchiveVersion
 {
-    internal enum ArchiveVersion
-    {
-        v100,
-        v400,
-        v410,
-        v411
-    }
+    v100,
+    v400,
+    v410,
+    v411
 }

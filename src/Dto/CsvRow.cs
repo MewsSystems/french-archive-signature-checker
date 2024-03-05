@@ -1,14 +1,13 @@
 using System.Collections.Generic;
 
-namespace Mews.Fiscalization.SignatureChecker.Dto
-{
-    internal class CsvRow
-    {
-        internal CsvRow(string[] values)
-        {
-            Values = values;
-        }
+namespace Mews.Fiscalization.SignatureChecker.Dto;
 
-        public IReadOnlyList<string> Values { get; }
+internal class CsvRow
+{
+    internal CsvRow(IReadOnlyList<string> values)
+    {
+        Values = values;
     }
+
+    public IReadOnlyList<string> Values { get; }
 }
