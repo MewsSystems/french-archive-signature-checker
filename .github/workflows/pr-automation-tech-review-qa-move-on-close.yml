@@ -1,4 +1,4 @@
- name: Move to ready to test in tech.review.qa board
+ name: pr-automation-qa-move-on-close
  on:	
    pull_request:
      types: [closed]
@@ -6,8 +6,8 @@
    move-to-ready-to-test:	
      runs-on: ubuntu-latest	
      steps:	
-       - name: Move to ready to test in tech.review.qa board
-         uses: alex-page/github-project-automation-plus@v0.3.0
+       - name: Move to ready to test
+         uses: alex-page/github-project-automation-plus@v0.9.0
          with:
            project: tech.review.qa
            column: Ready to test
