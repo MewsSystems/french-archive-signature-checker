@@ -1,92 +1,95 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
-using FuncSharp;
+using Mews.Fiscalization.SignatureChecker;
 using Mews.Fiscalization.SignatureChecker.Model;
 
-namespace Mews.Fiscalization.SignatureChecker;
+var (optionArguments, pathArguments) = args.Partition(a => a.StartsWith("--"));
+var archivePath = pathArguments.SingleOption().ToTry(_ => "Invalid arguments".ToReadOnlyList());
+var archiveFiles = archivePath.FlatMap(p => ZipFileReader.Read(p));
+var result = archiveFiles.FlatMap(files => ValidateArchive(files, optionArguments));
 
-internal static class Program
+result.Match(
+    r => PrintResult(isValid: r),
+    errors => PrintResult(isValid: false, errors.MkLines())
+);
+return;
+
+static void PrintResult(bool isValid, string message = null)
 {
-    public static void Main(string[] args)
+    Console.ForegroundColor = ConsoleColor.White;
+    if (isValid)
     {
-        var (optionArguments, pathArguments) = args.Partition(a => a.StartsWith("--"));
-
-        var archivePath = pathArguments.SingleOption().ToTry(_ => "Invalid arguments".ToReadOnlyList());
-        var archiveFiles = archivePath.FlatMap(p => ZipFileReader.Read(p));
-        var result = archiveFiles.FlatMap(files =>
+        Console.BackgroundColor = ConsoleColor.Green;
+        Console.WriteLine("Archive signature IS valid.");
+    }
+    else
+    {
+        Console.BackgroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Archive signature IS NOT valid.");
+        if (message is not null)
         {
-            var archive = Archive.Create(files);
-            var cryptoServiceProvider = GetCryptoServiceProvider(optionArguments);
-
-            return archive.Map(a =>
-            {
-                var isArchiveValid = IsArchiveValid(a, cryptoServiceProvider, files);
-                return isArchiveValid.Match(
-                    t => "Archive signature IS valid.",
-                    f => "Archive signature IS NOT valid."
-                );
-            });
-        });
-
-        result.Match(
-            r => Console.WriteLine(r),
-            errors =>  Console.WriteLine(errors.MkLines())
-        );
+            Console.WriteLine(message);
+        }
     }
+    Console.ResetColor();
+}
 
-    private static RSACryptoServiceProvider GetCryptoServiceProvider(IEnumerable<string> optionArguments)
+static Try<bool, IReadOnlyList<string>> ValidateArchive(IReadOnlyList<Mews.Fiscalization.SignatureChecker.Dto.File> files, IEnumerable<string> optionArguments)
+{
+    var archive = Archive.Create(files);
+    var cryptoServiceProvider = GetCryptoServiceProvider(optionArguments);
+
+    return archive.Map(a => IsArchiveValid(a, cryptoServiceProvider, files));
+}
+
+static RSACryptoServiceProvider GetCryptoServiceProvider(IEnumerable<string> optionArguments)
+{
+    var useDevelopProvider = optionArguments.Contains("--develop", StringComparer.InvariantCultureIgnoreCase);
+    return useDevelopProvider ? CryptoServiceProvider.GetDevelop() : CryptoServiceProvider.GetProduction();
+}
+
+static bool IsArchiveValid(Archive archive, RSACryptoServiceProvider cryptoServiceProvider, IEnumerable<Mews.Fiscalization.SignatureChecker.Dto.File> files)
+{
+    var computedSignature = ComputeSignature(archive, files);
+    var hashAlgorithmName = archive.Metadata.Version switch
     {
-        var useDevelopProvider = optionArguments.Contains("--develop", StringComparer.InvariantCultureIgnoreCase);
-        return useDevelopProvider.Match(
-            t => CryptoServiceProvider.GetDevelop(),
-            f => CryptoServiceProvider.GetProduction()
-        );
-    }
+        ArchiveVersion.v100 => HashAlgorithmName.SHA1,
+        ArchiveVersion.v400 => HashAlgorithmName.SHA256,
+        ArchiveVersion.v410 => HashAlgorithmName.SHA256,
+        ArchiveVersion.v411 => HashAlgorithmName.SHA256,
+        _ => throw new NotSupportedException($"{archive.Metadata.Version} archive version is not supported.")
+    };
+    return cryptoServiceProvider.VerifyData(computedSignature, archive.Signature.Value, hashAlgorithmName, RSASignaturePadding.Pkcs1);
+}
 
-    private static bool IsArchiveValid(Archive archive, RSACryptoServiceProvider cryptoServiceProvider, IEnumerable<Dto.File> files)
-    {
-        var computedSignature = ComputeSignature(archive, files);
-        var hashAlgorithmName = archive.Metadata.Version.Match(
-            ArchiveVersion.v100, _ => HashAlgorithmName.SHA1,
-            ArchiveVersion.v400, _ => HashAlgorithmName.SHA256,
-            ArchiveVersion.v410, _ => HashAlgorithmName.SHA256,
-            ArchiveVersion.v411, _ => HashAlgorithmName.SHA256
-        );
-        return cryptoServiceProvider.VerifyData(computedSignature, archive.Signature.Value, hashAlgorithmName, RSASignaturePadding.Pkcs1);
-    }
-
-    private static byte[] ComputeSignature(Archive archive, IEnumerable<Dto.File> files)
-    {
-        var archiveFilesContentHash = archive.Metadata.Version.Match(
-            ArchiveVersion.v411, _ =>
-            {
-                var applicableFiles = files.Where(f => f.Name.Contains(".csv") || f.Name.Contains(".html"));
-                var allFilesBytes = applicableFiles.SelectMany(f => Encoding.UTF8.GetBytes(f.Content));
-                return SHA256.HashData(allFilesBytes.ToArray()).ToOption();
-            },
-            _ => Option.Empty<byte[]>()
-        );
-
-        var taxSummary = archive.TaxSummary;
-        var reportedValue = archive.ReportedValue;
-        var previousSignatureFlag = archive.Metadata.PreviousRecordSignature.Match(
-            _ => "Y",
-            _ => "N"
-        );
-        var signatureProperties = new []
+static byte[] ComputeSignature(Archive archive, IEnumerable<Mews.Fiscalization.SignatureChecker.Dto.File> files)
+{
+    var archiveFilesContentHash = archive.Metadata.Version.Match(
+        ArchiveVersion.v411, _ =>
         {
-            taxSummary.ToSignatureString(),
-            reportedValue.Value.ToSignatureString(),
-            archive.Metadata.Created.ToSignatureString(),
-            archive.Metadata.TerminalIdentification,
-            archive.Metadata.ArchiveType.ToString().ToUpperInvariant(),
-            archiveFilesContentHash.Map(h => Convert.ToBase64String(h)).GetOrNull(),
-            previousSignatureFlag,
-            archive.Metadata.PreviousRecordSignature.Map(s => s.Base64UrlString).GetOrElse("")
-        };
-        return Encoding.UTF8.GetBytes(string.Join(",", signatureProperties.Where(p => p != null)));
-    }
+            var applicableFiles = files.Where(f => f.Name.Contains(".csv") || f.Name.Contains(".html"));
+            var allFilesBytes = applicableFiles.SelectMany(f => Encoding.UTF8.GetBytes(f.Content));
+            return SHA256.HashData(allFilesBytes.ToArray()).ToOption();
+        },
+        _ => Option.Empty<byte[]>()
+    );
+
+    var taxSummary = archive.TaxSummary;
+    var reportedValue = archive.ReportedValue;
+    var previousSignatureFlag = archive.Metadata.PreviousRecordSignature.Match(
+        _ => "Y",
+        _ => "N"
+    );
+    var signatureProperties = new[]
+    {
+        taxSummary.ToSignatureString(),
+        reportedValue.Value.ToSignatureString(),
+        archive.Metadata.Created.ToSignatureString(),
+        archive.Metadata.TerminalIdentification,
+        archive.Metadata.ArchiveType.ToString().ToUpperInvariant(),
+        archiveFilesContentHash.Map(h => Convert.ToBase64String(h)).GetOrNull(),
+        previousSignatureFlag,
+        archive.Metadata.PreviousRecordSignature.Map(s => s.Base64UrlString).GetOrElse("")
+    };
+    return Encoding.UTF8.GetBytes(string.Join(",", signatureProperties.Where(p => p != null)));
 }

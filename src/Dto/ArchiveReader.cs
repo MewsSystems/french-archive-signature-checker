@@ -1,7 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-using FuncSharp;
-
 namespace Mews.Fiscalization.SignatureChecker.Dto;
 
 internal static class ArchiveReader
@@ -17,7 +13,7 @@ internal static class ArchiveReader
         return Try.Aggregate(
             metadata,
             signature,
-            (m, s) => new Archive(metadata: m, signature: s, totals: totals, taxTotals: taxTotals, invoiceFooters: invoiceFooters)
+            (m, s) => new Archive(Metadata: m, Signature: s, Totals: totals, TaxTotals: taxTotals, InvoiceFooters: invoiceFooters.ToReadOnlyList())
         );
     }
 
@@ -39,6 +35,6 @@ internal static class ArchiveReader
     private static CsvData GetCsvData(string source)
     {
         var lines = source.Split('\n').Skip(1).Where(l => !string.IsNullOrWhiteSpace(l));
-        return new CsvData(lines.Select(l => new CsvRow(l.Split(';'))));
+        return new CsvData(lines.Select(l => new CsvRow(l.Split(';'))).ToReadOnlyList());
     }
 }

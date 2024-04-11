@@ -1,26 +1,7 @@
-using System.Collections.Generic;
-using FuncSharp;
-
 namespace Mews.Fiscalization.SignatureChecker.Model;
 
-internal class Archive
+internal sealed record Archive(ArchiveMetadata Metadata, Signature Signature, TaxSummary TaxSummary, ReportedValue ReportedValue)
 {
-    public Archive(ArchiveMetadata metadata, Signature signature, TaxSummary taxSummary, ReportedValue reportedValue)
-    {
-        Metadata = metadata;
-        Signature = signature;
-        TaxSummary = taxSummary;
-        ReportedValue = reportedValue;
-    }
-
-    public ArchiveMetadata Metadata { get; }
-
-    public Signature Signature { get; }
-
-    public TaxSummary TaxSummary { get; }
-
-    public ReportedValue ReportedValue { get; }
-
     public static Try<Archive, IReadOnlyList<string>> Create(IReadOnlyList<Dto.File> files)
     {
         var archive = Dto.ArchiveReader.CompileArchive(files);

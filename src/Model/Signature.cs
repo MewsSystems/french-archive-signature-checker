@@ -1,21 +1,7 @@
-using System;
-using System.Collections.Generic;
-using FuncSharp;
-
 namespace Mews.Fiscalization.SignatureChecker.Model;
 
-internal sealed class Signature
+internal sealed record Signature(string Base64UrlString, byte[] Value)
 {
-    private Signature(string base64UrlString, byte[] value)
-    {
-        Base64UrlString = base64UrlString;
-        Value = value;
-    }
-
-    public string Base64UrlString { get; }
-
-    public byte[] Value { get; }
-
     public static Try<Signature, IReadOnlyList<string>> Create(string base64UrlString)
     {
         var value = Try.Catch<byte[], Exception>(_ =>

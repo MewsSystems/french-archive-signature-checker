@@ -1,15 +1,7 @@
-using System;
-using FuncSharp;
-
 namespace Mews.Fiscalization.SignatureChecker.Model;
 
-internal sealed class TaxRate : Product1<decimal>, IComparable<TaxRate>
+internal sealed class TaxRate(decimal value) : Product1<decimal>(value), IComparable<TaxRate>
 {
-    public TaxRate(decimal value)
-        : base(value)
-    {
-    }
-
     public decimal Value => ProductValue1;
 
     public int CompareTo(TaxRate other)

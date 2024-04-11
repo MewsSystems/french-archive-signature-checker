@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using FuncSharp;
 using Mews.Fiscalization.SignatureChecker.Model;
 
 namespace Mews.Fiscalization.SignatureChecker;
@@ -11,11 +7,6 @@ internal static class Extensions
     internal static IReadOnlyList<string> ToReadOnlyList(this string value)
     {
         return value.ToEnumerable().AsReadOnlyList();
-    }
-
-    internal static IEnumerable<T> ToEnumerable<T>(this T value)
-    {
-        return new List<T>{value};
     }
 
     internal static string MkLines(this IEnumerable<string> values)
@@ -30,7 +21,7 @@ internal static class Extensions
 
     internal static string ToSignatureString(this Amount amount)
     {
-        return ((int)(amount.Value * 100)).ToString();
+        return ((Int128)(amount.Value * 100)).ToString();
     }
 
     internal static string ToSignatureString(this TaxSummary taxSummary)
@@ -39,21 +30,9 @@ internal static class Extensions
         return string.Join("|", parts);
     }
 
-    internal static string ToSignatureString(this TaxRate taxRate)
+    private static string ToSignatureString(this TaxRate taxRate)
     {
         var rateNormalizationConstant = 100 * 100;
         return ((int)(taxRate.Value * rateNormalizationConstant)).ToString().PadLeft(4, '0');
     }
-
-    public static Tuple<IReadOnlyCollection<T>, IReadOnlyCollection<T>> Partition<T>(this IEnumerable<T> e, Func<T, bool> predicate)
-    {
-        var passing = new List<T>();
-        var violating = new List<T>();
-        foreach (var i in e)
-        {
-            (predicate(i) ? passing : violating).Add(i);
-        }
-        return Tuple.Create<IReadOnlyCollection<T>, IReadOnlyCollection<T>>(passing, violating);
-    }
-
 }

@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Text;
-using FuncSharp;
 
 namespace Mews.Fiscalization.SignatureChecker;
 
@@ -19,7 +15,7 @@ internal static class ZipFileReader
             {
                 using var stream = File.OpenRead(p);
                 using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
-                return zip.Entries.Select(e => ReadEntry(e)).ToList();
+                return zip.Entries.Select(e => ReadEntry(e)).AsReadOnlyList();
             });
             return entries.MapError(e => $"Cannot read archive. {e.Message}".ToReadOnlyList());
         });
@@ -32,23 +28,10 @@ internal static class ZipFileReader
         return new Dto.File(zipEntry.Name, content);
     }
 
-    private static byte[] ReadFully(Stream stream, bool seekToBeginning = false)
+    private static byte[] ReadFully(Stream stream)
     {
-        if (seekToBeginning)
-        {
-            stream.Seek(0, SeekOrigin.Begin);
-        }
-
-        var buffer = new byte[32768];
         using var ms = new MemoryStream();
-        while (true)
-        {
-            var read = stream.Read(buffer, 0, buffer.Length);
-            if (read <= 0)
-            {
-                return ms.ToArray();
-            }
-            ms.Write(buffer, 0, read);
-        }
+        stream.CopyTo(ms);
+        return ms.ToArray();
     }
 }
