@@ -14,7 +14,7 @@ internal sealed class TaxSummary
 
     public IReadOnlyDictionary<TaxRate, Amount> Data { get; }
 
-    public static ITry<TaxSummary, IEnumerable<string>> Create(Dto.Archive archive, ArchiveVersion version)
+    public static Try<TaxSummary, IReadOnlyList<string>> Create(Dto.Archive archive, ArchiveVersion version)
     {
         return version.Match(
             ArchiveVersion.v100, _ => GetV1TaxSummary(archive),
@@ -34,9 +34,9 @@ internal sealed class TaxSummary
         ));
     }
 
-    private static ITry<TaxSummary, IEnumerable<string>> GetV1TaxSummary(Dto.Archive archive)
+    private static Try<TaxSummary, IReadOnlyList<string>> GetV1TaxSummary(Dto.Archive archive)
     {
-        var taxTotals = archive.TaxTotals.ToTry(_ => "Tax totals file not found.".ToEnumerable());
+        var taxTotals = archive.TaxTotals.ToTry(_ => "Tax totals file not found.".ToReadOnlyList());
         var data = taxTotals.FlatMap(t => Try.Aggregate(t.Rows.Select(row =>
         {
             return Try.Aggregate(
@@ -52,9 +52,9 @@ internal sealed class TaxSummary
         )));
     }
 
-    private static ITry<TaxSummary, IEnumerable<string>> GetV4TaxSummary(Dto.Archive archive)
+    private static Try<TaxSummary, IReadOnlyList<string>> GetV4TaxSummary(Dto.Archive archive)
     {
-        return archive.InvoiceFooters.ToNonEmptyOption().Match(
+        return archive.InvoiceFooters.AsNonEmpty().Match(
             a =>
             {
                 var taxBreakdownNet = Try.Aggregate(a.SelectMany(f => f.Rows.Select(row => ParseLineTaxSummary(row.Values[1]))));
@@ -65,13 +65,13 @@ internal sealed class TaxSummary
                     (net, tax) => Sum(net.Concat(tax))
                 );
             },
-            _ => Try.Error<TaxSummary, IEnumerable<string>>("Invoice footer file/s not found.".ToEnumerable())
+            _ => Try.Error<TaxSummary, IReadOnlyList<string>>("Invoice footer file/s not found.".ToReadOnlyList())
         );
     }
 
-    private static ITry<TaxSummary, IEnumerable<string>> ParseLineTaxSummary(string value)
+    private static Try<TaxSummary, IReadOnlyList<string>> ParseLineTaxSummary(string value)
     {
-        var rawValues = value.Split('|').Where(v => !String.IsNullOrEmpty(v));
+        var rawValues = value.Split('|').Where(v => !string.IsNullOrEmpty(v));
         var parsedValues = rawValues.Select(v =>
         {
             var parts = v.Split(':');

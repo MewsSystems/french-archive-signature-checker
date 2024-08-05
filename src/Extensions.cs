@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FuncSharp;
 using Mews.Fiscalization.SignatureChecker.Model;
 
 namespace Mews.Fiscalization.SignatureChecker;
 
 internal static class Extensions
 {
-    internal static IEnumerable<T> ToEnumerable<T>(this T value)
+    internal static IReadOnlyList<string> ToReadOnlyList(this string value)
     {
-        return new List<T>{value};
+        return value.ToEnumerable().AsReadOnlyList();
     }
 
     internal static string MkLines(this IEnumerable<string> values)

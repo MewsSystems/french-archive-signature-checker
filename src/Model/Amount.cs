@@ -14,12 +14,12 @@ internal sealed class Amount
 
     public decimal Value { get; }
 
-    public static ITry<Amount, IEnumerable<string>> Create(decimal value, string currencyCodeOrSymbol)
+    public static Try<Amount, IReadOnlyList<string>> Create(decimal value, string currencyCodeOrSymbol)
     {
         return currencyCodeOrSymbol.Match(
-            "€", _ => Try.Success<Amount, IEnumerable<string>>(new Amount(value)),
-            "EUR", _ => Try.Success<Amount, IEnumerable<string>>(new Amount(value)),
-            _ => Try.Error<Amount, IEnumerable<string>>("Currency not found.".ToEnumerable())
+            "€", _ => Try.Success<Amount, IReadOnlyList<string>>(new Amount(value)),
+            "EUR", _ => Try.Success<Amount, IReadOnlyList<string>>(new Amount(value)),
+            _ => Try.Error<Amount, IReadOnlyList<string>>("Currency not found.".ToReadOnlyList())
         );
     }
 

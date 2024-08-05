@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using FuncSharp;
@@ -7,7 +6,7 @@ namespace Mews.Fiscalization.SignatureChecker.Dto;
 
 internal static class ArchiveReader
 {
-    public static ITry<Archive, IEnumerable<string>> CompileArchive(IReadOnlyList<File> files)
+    public static Try<Archive, IReadOnlyList<string>> CompileArchive(IReadOnlyList<File> files)
     {
         var metadata = GetFile(files, "METADATA.json");
         var signature = GetFile(files, "SIGNATURE.txt");
@@ -22,9 +21,9 @@ internal static class ArchiveReader
         );
     }
 
-    private static ITry<File, IEnumerable<string>> GetFile(IReadOnlyList<File> files, string namePrefix)
+    private static Try<File, IReadOnlyList<string>> GetFile(IReadOnlyList<File> files, string namePrefix)
     {
-        return GetOptionalEntry(files, namePrefix).ToTry(_ => $"No unique file found {namePrefix}*.".ToEnumerable());
+        return GetOptionalEntry(files, namePrefix).ToTry(_ => $"No unique file found {namePrefix}*.".ToReadOnlyList());
     }
 
     private static IEnumerable<File> GetFiles(IEnumerable<File> files, string namePrefix)
@@ -32,14 +31,14 @@ internal static class ArchiveReader
         return files.Where(f => f.Name.StartsWith(namePrefix));
     }
 
-    private static IOption<File> GetOptionalEntry(IReadOnlyList<File> files, string namePrefix)
+    private static Option<File> GetOptionalEntry(IReadOnlyList<File> files, string namePrefix)
     {
         return files.SingleOption(e => e.Name.StartsWith(namePrefix));
     }
 
     private static CsvData GetCsvData(string source)
     {
-        var lines = source.Split('\n').Skip(1).Where(l => !String.IsNullOrWhiteSpace(l));
+        var lines = source.Split('\n').Skip(1).Where(l => !string.IsNullOrWhiteSpace(l));
         return new CsvData(lines.Select(l => new CsvRow(l.Split(';'))));
     }
 }
