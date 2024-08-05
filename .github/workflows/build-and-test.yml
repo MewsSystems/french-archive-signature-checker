@@ -33,7 +33,7 @@ jobs:
         dotnet-version: 8.x
 
     - name: Clean
-      run: dotnet clean ./Mews.Fiscalization.SignatureChecker.sln --configuration Release && dotnet nuget locals all --clear
+      run: dotnet clean ../Mews.Fiscalization.SignatureChecker.sln --configuration Release && dotnet nuget locals all --clear
         
     - name: Install dependencies
       run: dotnet restore
