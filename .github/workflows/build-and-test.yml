@@ -33,7 +33,7 @@ jobs:
         dotnet-version: 8.x
 
     - name: Clean
-      run: dotnet clean ./Mews.Fiscalization.France.sln --configuration Release && dotnet nuget locals all --clear
+      run: dotnet clean ./Mews.Fiscalization.SignatureChecker.sln --configuration Release && dotnet nuget locals all --clear
         
     - name: Install dependencies
       run: dotnet restore
@@ -48,7 +48,7 @@ jobs:
       uses: dorny/test-reporter@v1
       if: success() || failure()
       with:
-        name: Mews.Fiscalizations.All-${{ runner.os }} Tests
+        name: Mews.Fiscalizations.SignatureChecker-${{ runner.os }} Tests
         path: "**/test-results-${{ runner.os }}.trx"
         reporter: dotnet-trx
         fail-on-error: true
