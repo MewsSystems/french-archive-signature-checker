@@ -1,17 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Mews.Fiscalization.SignatureChecker.Dto
+namespace Mews.Fiscalization.SignatureChecker.Dto;
+
+internal sealed class CsvData
 {
-    internal class CsvData
+    internal CsvData(IEnumerable<CsvRow> rows)
     {
-        internal CsvData(IEnumerable<CsvRow> rows)
-        {
-            Rows = rows.ToList();
-        }
-
-        public IReadOnlyList<CsvRow> Rows { get; }
-
-
+        Rows = rows.ToList();
     }
+
+    public IReadOnlyList<CsvRow> Rows { get; }
 }

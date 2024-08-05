@@ -1,10 +1,9 @@
-﻿namespace Mews.Fiscalization.SignatureChecker.Model
+﻿namespace Mews.Fiscalization.SignatureChecker.Model;
+
+internal enum ArchiveType
 {
-    internal enum ArchiveType
-    {
-        Archiving, // only supported in v1.
-        Day,
-        Month,
-        FiscalYear
-    }
+    Archiving, // only supported in v1.
+    Day,
+    Month,
+    FiscalYear
 }
