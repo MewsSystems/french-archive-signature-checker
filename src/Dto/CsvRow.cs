@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Mews.Fiscalization.SignatureChecker.Dto;
 
 internal sealed class CsvRow

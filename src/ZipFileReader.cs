@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Text;
-using FuncSharp;
 
 namespace Mews.Fiscalization.SignatureChecker;
 
@@ -12,7 +8,7 @@ internal static class ZipFileReader
 {
     public static Try<IReadOnlyList<Dto.File>, IReadOnlyList<string>> Read(string path)
     {
-        var validPath = path.ToOption().Where(p => File.Exists(p)).ToTry(_ => "File does not exist.".ToReadOnlyList());
+        var validPath = path.ToOption().Where(p => File.Exists(p)).ToTry(_ => $"File {path} does not exist.".ToReadOnlyList());
         return validPath.FlatMap(p =>
         {
             var entries = Try.Catch<IReadOnlyList<Dto.File>, Exception>(_ =>
@@ -21,7 +17,7 @@ internal static class ZipFileReader
                 using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
                 return zip.Entries.Select(e => ReadEntry(e)).AsReadOnlyList();
             });
-            return entries.MapError(e => "Cannot read archive.".ToReadOnlyList());
+            return entries.MapError(e => $"Cannot read archive: {e.Message}.".ToReadOnlyList());
         });
     }
 

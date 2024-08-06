@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using FuncSharp;
-
 namespace Mews.Fiscalization.SignatureChecker.Model;
 
 internal sealed class Signature
@@ -29,6 +25,6 @@ internal sealed class Signature
             return Convert.FromBase64String(sourceBase64);
         });
 
-        return value.Map(v => new Signature(base64UrlString, v)).MapError(e => "Failed to read signature.".ToReadOnlyList());
+        return value.Map(v => new Signature(base64UrlString, v)).MapError(e => $"Failed to read signature: {e.Message}.".ToReadOnlyList());
     }
 }

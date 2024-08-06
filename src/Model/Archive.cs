@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using FuncSharp;
-
 namespace Mews.Fiscalization.SignatureChecker.Model;
 
 internal sealed class Archive
@@ -27,7 +24,7 @@ internal sealed class Archive
         return archive.FlatMap(c => Parse(c));
     }
 
-    public static Try<Archive, IReadOnlyList<string>> Parse(Dto.Archive archive)
+    private static Try<Archive, IReadOnlyList<string>> Parse(Dto.Archive archive)
     {
         return ArchiveMetadata.Create(archive).FlatMap(metadata =>
         {
