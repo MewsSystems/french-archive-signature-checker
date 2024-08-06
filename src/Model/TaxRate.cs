@@ -5,7 +5,8 @@ namespace Mews.Fiscalization.SignatureChecker.Model;
 
 internal sealed class TaxRate : Product1<decimal>, IComparable<TaxRate>
 {
-    public TaxRate(decimal value) : base(value)
+    public TaxRate(decimal value)
+        : base(value)
     {
     }
 
@@ -18,6 +19,6 @@ internal sealed class TaxRate : Product1<decimal>, IComparable<TaxRate>
 
     public override string ToString()
     {
-        return $"{(Value * 100)} %";
+        return $"{Value * 100} %";
     }
 }

@@ -14,7 +14,7 @@ internal class Program
     {
         var (optionArguments, pathArguments) = args.Partition(a => a.StartsWith("--"));
 
-        var archivePath = pathArguments.SingleOption().ToTry(_ => "Invalid arguments".ToEnumerable());
+        var archivePath = pathArguments.SingleOption().ToTry(_ => "Invalid arguments".ToReadOnlyList());
         var archiveFiles = archivePath.FlatMap(p => ZipFileReader.Read(p));
         var result = archiveFiles.FlatMap(files =>
         {

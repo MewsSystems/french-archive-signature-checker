@@ -5,7 +5,7 @@ namespace Mews.Fiscalization.SignatureChecker.Model;
 
 internal sealed class Archive
 {
-    public Archive(ArchiveMetadata metadata, Signature signature, TaxSummary taxSummary, ReportedValue reportedValue)
+    private Archive(ArchiveMetadata metadata, Signature signature, TaxSummary taxSummary, ReportedValue reportedValue)
     {
         Metadata = metadata;
         Signature = signature;
@@ -21,13 +21,13 @@ internal sealed class Archive
 
     public ReportedValue ReportedValue { get; }
 
-    public static ITry<Archive, IEnumerable<string>> Create(IReadOnlyList<Dto.File> files)
+    public static Try<Archive, IReadOnlyList<string>> Create(IReadOnlyList<Dto.File> files)
     {
         var archive = Dto.ArchiveReader.CompileArchive(files);
         return archive.FlatMap(c => Parse(c));
     }
 
-    public static ITry<Archive, IEnumerable<string>> Parse(Dto.Archive archive)
+    public static Try<Archive, IReadOnlyList<string>> Parse(Dto.Archive archive)
     {
         return ArchiveMetadata.Create(archive).FlatMap(metadata =>
         {

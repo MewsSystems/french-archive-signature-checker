@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Linq;
+using FuncSharp;
 
 namespace Mews.Fiscalization.SignatureChecker.Dto;
 
@@ -7,7 +7,7 @@ internal sealed class CsvData
 {
     internal CsvData(IEnumerable<CsvRow> rows)
     {
-        Rows = rows.ToList();
+        Rows = rows.AsReadOnlyList();
     }
 
     public IReadOnlyList<CsvRow> Rows { get; }

@@ -16,9 +16,9 @@ internal sealed class Signature
 
     public byte[] Value { get; }
 
-    public static ITry<Signature, IEnumerable<string>> Create(string base64UrlString)
+    public static Try<Signature, IReadOnlyList<string>> Create(string base64UrlString)
     {
-        var value = Try.Create<byte[], Exception>(_ =>
+        var value = Try.Catch<byte[], Exception>(_ =>
         {
             var paddingLength = (base64UrlString.Length % 4).Match(
                 0, u => 0,
@@ -29,6 +29,6 @@ internal sealed class Signature
             return Convert.FromBase64String(sourceBase64);
         });
 
-        return value.Map(v => new Signature(base64UrlString, v)).MapError(e => "Failed to read signature.".ToEnumerable());
+        return value.Map(v => new Signature(base64UrlString, v)).MapError(e => "Failed to read signature.".ToReadOnlyList());
     }
 }

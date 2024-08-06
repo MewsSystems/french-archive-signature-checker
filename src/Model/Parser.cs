@@ -7,16 +7,16 @@ namespace Mews.Fiscalization.SignatureChecker.Model;
 
 internal static class Parser
 {
-    private static readonly CultureInfo FrenchCulture = new CultureInfo("fr-FR");
-    private static readonly Regex AmountRegex = new Regex(@"([-−]?[\d\s\\.,]*[\d\\.,])\s*([^\d\s\.]+)?");
+    private static readonly CultureInfo FrenchCulture = new("fr-FR");
+    private static readonly Regex AmountRegex = new(@"([-−]?[\d\s\\.,]*[\d\\.,])\s*([^\d\s\.]+)?");
 
-    public static ITry<decimal, IEnumerable<string>> ParseDecimal(string value)
+    public static Try<decimal, IReadOnlyList<string>> ParseDecimal(string value)
     {
         var isSuccess = decimal.TryParse(Regex.Replace(value, @"\s+", "").Replace('.', ',').Replace('−', '-'), NumberStyles.Number, FrenchCulture, out var result);
-        return isSuccess.ToTry(_ => result, _ => "Invalid number.".ToEnumerable());
+        return isSuccess.ToTry(_ => result, _ => "Invalid number.".ToReadOnlyList());
     }
 
-    public static ITry<Amount, IEnumerable<string>> ParseAmount(string stringValue)
+    public static Try<Amount, IReadOnlyList<string>> ParseAmount(string stringValue)
     {
         var amountParts = AmountRegex.Match(stringValue);
         var value = amountParts.Groups[1].Value;
