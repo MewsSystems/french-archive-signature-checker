@@ -1,7 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-using FuncSharp;
-
 namespace Mews.Fiscalization.SignatureChecker.Model;
 
 internal sealed class ReportedValue
@@ -15,12 +11,14 @@ internal sealed class ReportedValue
 
     public static Try<ReportedValue, IReadOnlyList<string>> Create(Dto.Archive archive, ArchiveVersion version)
     {
-        var reportedValue = version.Match(
-            ArchiveVersion.v100, _ => GetReportedValueV1(archive),
-            ArchiveVersion.v400, _ => GetReportedValueV4(archive),
-            ArchiveVersion.v410, _ => GetReportedValueV4(archive),
-            ArchiveVersion.v411, _ => GetReportedValueV4(archive)
-        );
+        var reportedValue = version switch
+        {
+            ArchiveVersion.v100 => GetReportedValueV1(archive),
+            ArchiveVersion.v400 => GetReportedValueV4(archive),
+            ArchiveVersion.v410 => GetReportedValueV4(archive),
+            ArchiveVersion.v411 => GetReportedValueV4(archive),
+            _ => Try.Error<Amount, IReadOnlyList<string>>($"Unsupported archive version {version}.".ToReadOnlyList())
+        };
 
         return reportedValue.Map(value => new ReportedValue(value));
     }

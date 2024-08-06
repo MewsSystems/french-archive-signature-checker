@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using FuncSharp;
 using Newtonsoft.Json;
 
 namespace Mews.Fiscalization.SignatureChecker.Model;
@@ -31,19 +28,22 @@ internal sealed class ArchiveMetadata
         var rawMetadata = Try.Catch<Dto.ArchiveMetadata, Exception>(_ => JsonConvert.DeserializeObject<Dto.ArchiveMetadata>(archive.Metadata.Content));
         return rawMetadata.MapError(_ => $"Invalid data ({archive.Metadata.Name}).".ToReadOnlyList()).FlatMap(metadata =>
         {
-            var version = metadata.Version.Match(
-                "1.0", _ => Try.Success<ArchiveVersion, IReadOnlyList<string>>(ArchiveVersion.v100),
-                "4.0", _ => Try.Success<ArchiveVersion, IReadOnlyList<string>>(ArchiveVersion.v400),
-                "4.1", _ => Try.Success<ArchiveVersion, IReadOnlyList<string>>(ArchiveVersion.v410),
-                "4.1.1", _ => Try.Success<ArchiveVersion, IReadOnlyList<string>>(ArchiveVersion.v411),
-                _ => Try.Error<ArchiveVersion, IReadOnlyList<string>>("Archive version is not supported.".ToReadOnlyList())
-            );
-            var archiveType = version.FlatMap(v => v.Match(
-                ArchiveVersion.v100, u => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.Archiving),
-                ArchiveVersion.v400, u => ParseVersion4ArchiveType(metadata),
-                ArchiveVersion.v410, u => ParseVersion4ArchiveType(metadata),
-                ArchiveVersion.v411, u => ParseVersion4ArchiveType(metadata)
-            ));
+            var version = metadata.Version switch
+            {
+                "1.0" => Try.Success<ArchiveVersion, IReadOnlyList<string>>(ArchiveVersion.v100),
+                "4.0" => Try.Success<ArchiveVersion, IReadOnlyList<string>>(ArchiveVersion.v400),
+                "4.1" => Try.Success<ArchiveVersion, IReadOnlyList<string>>(ArchiveVersion.v410),
+                "4.1.1" => Try.Success<ArchiveVersion, IReadOnlyList<string>>(ArchiveVersion.v411),
+                _ => Try.Error<ArchiveVersion, IReadOnlyList<string>>($"Archive version {metadata.Version} is not supported.".ToReadOnlyList())
+            };
+            var archiveType = version.FlatMap(v => v switch
+            {
+                ArchiveVersion.v100 => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.Archiving),
+                ArchiveVersion.v400 => ParseVersion4ArchiveType(metadata),
+                ArchiveVersion.v410 => ParseVersion4ArchiveType(metadata),
+                ArchiveVersion.v411 => ParseVersion4ArchiveType(metadata),
+                _ => Try.Error<ArchiveType, IReadOnlyList<string>>($"Archive type {v} is not supported.".ToReadOnlyList())
+            });
             var previousRecordSignature = metadata.PreviousRecordSignature.ToOption().Match(
                 s => Signature.Create(s),
                 _ => Try.Success<Signature, IReadOnlyList<string>>(null)
@@ -59,11 +59,12 @@ internal sealed class ArchiveMetadata
 
     private static Try<ArchiveType, IReadOnlyList<string>> ParseVersion4ArchiveType(Dto.ArchiveMetadata archiveMetadata)
     {
-        return archiveMetadata.ArchiveType.Match(
-            "DAY", _ => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.Day),
-            "MONTH", _ => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.Month),
-            "FISCALYEAR", _ => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.FiscalYear),
-            _ => Try.Error<ArchiveType, IReadOnlyList<string>>($"{nameof(Model.ArchiveType)} is not supported.".ToReadOnlyList())
-        );
+        return archiveMetadata.ArchiveType switch
+        {
+            "DAY" => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.Day),
+            "MONTH" => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.Month),
+            "FISCALYEAR" => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.FiscalYear),
+            _ => Try.Error<ArchiveType, IReadOnlyList<string>>($"Archive type {archiveMetadata.ArchiveType} is not supported.".ToReadOnlyList())
+        };
     }
 }

@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using FuncSharp;
-
 namespace Mews.Fiscalization.SignatureChecker.Dto;
 
 internal sealed class Archive

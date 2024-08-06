@@ -1,7 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-using FuncSharp;
-
 namespace Mews.Fiscalization.SignatureChecker.Model;
 
 internal sealed class TaxSummary
@@ -15,12 +11,14 @@ internal sealed class TaxSummary
 
     public static Try<TaxSummary, IReadOnlyList<string>> Create(Dto.Archive archive, ArchiveVersion version)
     {
-        return version.Match(
-            ArchiveVersion.v100, _ => GetV1TaxSummary(archive),
-            ArchiveVersion.v400, _ => GetV4TaxSummary(archive),
-            ArchiveVersion.v410, _ => GetV4TaxSummary(archive),
-            ArchiveVersion.v411, _ => GetV4TaxSummary(archive)
-        );
+        return version switch
+        {
+            ArchiveVersion.v100 => GetV1TaxSummary(archive),
+            ArchiveVersion.v400 => GetV4TaxSummary(archive),
+            ArchiveVersion.v410 => GetV4TaxSummary(archive),
+            ArchiveVersion.v411 => GetV4TaxSummary(archive),
+            _ => throw new ArgumentOutOfRangeException(nameof(version), version, "Invalid archive version.")
+        };
     }
 
     private static TaxSummary Sum(IEnumerable<TaxSummary> summaries)
