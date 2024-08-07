@@ -2,16 +2,43 @@
 
 ## Mews.Fiscalization.SignatureChecker
 
-This is a tool that can be used to verify the signature of the French fiscal archives. It loads the data that are part of the signature from the ZIP archive and verifies the attached signature using the Mews public key.
+This tool can be used to verify the signature of the French fiscal archives. It loads the data that are part of the signature from the ZIP archive and verifies the attached signature using the Mews public key.
 
 ### Usage
 
-After downloading the latest version of the tool and extracting it:
-Windows: run ```Mews.Fiscalization.SignatureChecker.exe``` then provide the path to the ZIP archive and the environment for which the signature should be verified.
-Command example: ```2025.zip --production``` or ```2025.zip --develop```
+1. **Extract the ZIP file**:
+   - Extract the ZIP file's contents into a folder of your choice.
 
-Mac: run ```chmod +x Mews.Fiscalization.SignatureChecker``` then provide the path to the ZIP archive and the environment for which the signature should be verified.
-Command example: ```2025.zip --production``` or ```2025.zip --develop```
+2. **Navigate to the folder related to your OS (WindowsOS or MacOS)**:
+   - Open the extracted folder and navigate to the `WindowsOS` or `MacOS` subfolder.
+
+3. **For Windows, run** `Mews.Fiscalization.SignatureChecker.exe`
+
+### For MacOS
+1. **For MacOS Open the terminal (CLI)**:
+   - Open the terminal and change the directory to the `MacOS` folder.
+
+2. **Run the following commands in the terminal**:
+   - Remove the quarantine attribute:
+     ```sh
+     xattr -dr com.apple.quarantine Mews.Fiscalization.SignatureChecker
+     ```
+   - Execute the tool:
+     ```sh
+     ./Mews.Fiscalization.SignatureChecker
+     ```
+
+3. **Handling permission issues**:
+   - If you encounter any permission issues, run the following command to make the tool executable:
+     ```sh
+     chmod +x Mews.Fiscalization.SignatureChecker
+     ```
+   - Then, execute the tool again:
+     ```sh
+     ./Mews.Fiscalization.SignatureChecker
+     ```
+     
+After finishing the steps above, run the following command to verify the signature of an archive zip file:  ```2025.zip --production``` or ```2025.zip --develop```
 
 ### Parameters
 
