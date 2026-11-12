@@ -1,0 +1,16 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <Authors>Mews</Authors>
+    <Copyright>Mews</Copyright>
+    <PackageProjectUrl>https://github.com/MewsSystems/french-archive-signature-checker</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MewsSystems/french-archive-signature-checker</RepositoryUrl>
+  </PropertyGroup>
+
+</Project>

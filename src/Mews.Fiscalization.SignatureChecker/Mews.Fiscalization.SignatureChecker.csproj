@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Version>2.1.0</Version>
+    <Title>Mews.Fiscalization.SignatureChecker</Title>
+    <Description>French fiscal archives signature checker tool</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FuncSharp" />
+    <PackageReference Include="Newtonsoft.Json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Mews.Fiscalization.SignatureChecker.Tests" />
+  </ItemGroup>
+
+</Project>

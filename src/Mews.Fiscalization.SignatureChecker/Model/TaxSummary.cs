@@ -72,6 +72,10 @@ internal sealed class TaxSummary
         var parsedValues = rawValues.Select(v =>
         {
             var parts = v.Split(':');
+            if (parts.Length < 2)
+            {
+                return Try.Error<(decimal Percentage, Amount Amount), IReadOnlyList<string>>($"Invalid tax breakdown \"{v}\", expected \"<rate> %:<amount>\".".ToReadOnlyList());
+            }
             var percentage = Parser.ParseDecimal(parts[0].TrimEnd('%').Trim());
             var amount = Parser.ParseAmount(parts[1]);
             return percentage.FlatMap(p => amount.Map(a => (Percentage: p / 100, Amount: a)));

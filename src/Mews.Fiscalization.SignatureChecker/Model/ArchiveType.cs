@@ -1,4 +1,4 @@
-﻿namespace Mews.Fiscalization.SignatureChecker.Model;
+namespace Mews.Fiscalization.SignatureChecker.Model;
 
 internal enum ArchiveType
 {
