@@ -127,6 +127,57 @@ internal static class TestArchives
     }
 
     /// <summary>
+    /// Makes an existing file unreadable for the current user until the result is disposed: on Linux and macOS by
+    /// removing all permissions from its folder (so File.Exists cannot see it), on Windows by denying read access to the file.
+    /// </summary>
+    public static IDisposable MakeInaccessible(string filePath)
+    {
+        return OperatingSystem.IsWindows() ? new DeniedWindowsFile(filePath) : new LockedUnixFolder(filePath);
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private sealed class DeniedWindowsFile : IDisposable
+    {
+        private readonly System.IO.FileInfo file;
+        private readonly System.Security.AccessControl.FileSystemAccessRule rule;
+
+        public DeniedWindowsFile(string filePath)
+        {
+            file = new System.IO.FileInfo(filePath);
+            rule = new System.Security.AccessControl.FileSystemAccessRule(
+                System.Security.Principal.WindowsIdentity.GetCurrent().User!,
+                System.Security.AccessControl.FileSystemRights.ReadData,
+                System.Security.AccessControl.AccessControlType.Deny);
+            var security = file.GetAccessControl();
+            security.AddAccessRule(rule);
+            file.SetAccessControl(security);
+        }
+
+        public void Dispose()
+        {
+            var security = file.GetAccessControl();
+            security.RemoveAccessRule(rule);
+            file.SetAccessControl(security);
+        }
+    }
+
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    private sealed class LockedUnixFolder : IDisposable
+    {
+        private readonly string folder;
+        private readonly System.IO.UnixFileMode mode;
+
+        public LockedUnixFolder(string filePath)
+        {
+            folder = System.IO.Path.GetDirectoryName(filePath)!;
+            mode = System.IO.File.GetUnixFileMode(folder);
+            System.IO.File.SetUnixFileMode(folder, System.IO.UnixFileMode.None);
+        }
+
+        public void Dispose() => System.IO.File.SetUnixFileMode(folder, mode);
+    }
+
+    /// <summary>
     /// A ZIP file whose directory is intact (so it opens) but whose only entry fails to decompress.
     /// </summary>
     public static string WriteCorruptZip(string directory)

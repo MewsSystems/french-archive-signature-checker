@@ -302,6 +302,32 @@ public sealed class ConsoleApplicationTests : IDisposable
     }
 
     [Fact]
+    public void Arguments_InaccessibleExistingFileExitsWithOne()
+    {
+        Assert.SkipWhen(Environment.IsPrivilegedProcess, "Root and administrators bypass file permissions.");
+        var folder = Directory.CreateDirectory(Path.Combine(directory, "locked")).FullName;
+        var path = WriteArchive(folder);
+
+        (int ExitCode, List<string> Output) result;
+        using (TestArchives.MakeInaccessible(path))
+        {
+            result = Run([path]);
+        }
+
+        Assert.Equal(ExitCodes.NotValid, result.ExitCode);
+        Assert.StartsWith("[Red] Archive signature is not valid. Cannot read archive: ", Assert.Single(result.Output));
+    }
+
+    [Fact]
+    public void Arguments_FolderExitsWithTwo()
+    {
+        var (exitCode, output) = Run([directory]);
+
+        Assert.Equal(ExitCodes.InvalidUsage, exitCode);
+        Assert.Equal([$"[Red] File {directory} does not exist."], output);
+    }
+
+    [Fact]
     public void Interactive_UnreadableZipIsReportedAndAsksToContinue()
     {
         var (_, output) = Run([], TestArchives.WriteCorruptZip(directory), "no");

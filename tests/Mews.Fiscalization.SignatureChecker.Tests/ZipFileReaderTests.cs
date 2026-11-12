@@ -69,6 +69,45 @@ public sealed class ZipFileReaderTests : IDisposable
         Assert.StartsWith("Cannot read archive: ", error.Message);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("bad\0path.zip")]
+    public void Read_ReportsUnusablePathAsMissing(string path)
+    {
+        Assert.Equal(new ZipReadError(FileNotFound: true, $"File {path} does not exist."), ZipFileReader.Read(path).Error.Get());
+    }
+
+    [Fact]
+    public void Read_ReportsFolderAsMissing()
+    {
+        Assert.Equal(new ZipReadError(FileNotFound: true, $"File {directory} does not exist."), ZipFileReader.Read(directory).Error.Get());
+    }
+
+    [Fact]
+    public void Read_ReportsMissingFolderAsMissing()
+    {
+        var path = Path.Combine(directory, "no-such-folder", "2025.zip");
+
+        Assert.True(ZipFileReader.Read(path).Error.Get().FileNotFound);
+    }
+
+    [Fact]
+    public void Read_InaccessibleExistingFileIsNotReportedAsMissing()
+    {
+        Assert.SkipWhen(Environment.IsPrivilegedProcess, "Root and administrators bypass file permissions.");
+        var folder = Directory.CreateDirectory(Path.Combine(directory, "locked")).FullName;
+        var path = TestArchives.WriteZip(TestArchives.V1Files().WithSignature("AQID"), folder);
+
+        ZipReadError error;
+        using (TestArchives.MakeInaccessible(path))
+        {
+            error = ZipFileReader.Read(path).Error.Get();
+        }
+
+        Assert.False(error.FileNotFound);
+        Assert.StartsWith("Cannot read archive: ", error.Message);
+    }
+
     [Fact]
     public void Read_ReportsZipWithCorruptEntry()
     {
