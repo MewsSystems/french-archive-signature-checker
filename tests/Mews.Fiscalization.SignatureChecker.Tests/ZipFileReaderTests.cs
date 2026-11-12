@@ -48,13 +48,13 @@ public sealed class ZipFileReaderTests : IDisposable
     {
         var path = Path.Combine(directory, "missing.zip");
 
-        Assert.Equal([$"File {path} does not exist."], ZipFileReader.Read(path).Error.Get());
+        Assert.Equal(new ZipReadError(FileNotFound: true, $"File {path} does not exist."), ZipFileReader.Read(path).Error.Get());
     }
 
     [Fact]
     public void Read_ReportsNullPath()
     {
-        Assert.Equal(["File  does not exist."], ZipFileReader.Read(null).Error.Get());
+        Assert.Equal(new ZipReadError(FileNotFound: true, "File  does not exist."), ZipFileReader.Read(null).Error.Get());
     }
 
     [Fact]
@@ -63,9 +63,21 @@ public sealed class ZipFileReaderTests : IDisposable
         var path = Path.Combine(directory, "not-a.zip");
         File.WriteAllText(path, "plain text");
 
-        var error = Assert.Single(ZipFileReader.Read(path).Error.Get());
+        var error = ZipFileReader.Read(path).Error.Get();
 
-        Assert.StartsWith("Cannot read archive: ", error);
+        Assert.False(error.FileNotFound);
+        Assert.StartsWith("Cannot read archive: ", error.Message);
+    }
+
+    [Fact]
+    public void Read_ReportsZipWithCorruptEntry()
+    {
+        var path = TestArchives.WriteCorruptZip(directory);
+
+        var error = ZipFileReader.Read(path).Error.Get();
+
+        Assert.False(error.FileNotFound);
+        Assert.StartsWith("Cannot read archive: ", error.Message);
     }
 
     public void Dispose()

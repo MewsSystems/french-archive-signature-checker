@@ -54,8 +54,8 @@ internal sealed class ConsoleApplication(
 
         Exit codes:
           {ExitCodes.Valid}  The archive signature is valid.
-          {ExitCodes.NotValid}  The archive signature is not valid, or the archive could not be read.
-          {ExitCodes.InvalidUsage}  The arguments are invalid, or the file does not exist or is not a ZIP file.
+          {ExitCodes.NotValid}  The archive signature is not valid, or the file is not a readable archive.
+          {ExitCodes.InvalidUsage}  The arguments are invalid, or the file does not exist.
         """;
 
     public int Run(IReadOnlyList<string> arguments)
@@ -69,7 +69,7 @@ internal sealed class ConsoleApplication(
             command => Execute(command),
             errors =>
             {
-                LogMessage(errors.MkLines(), isError: true);
+                LogMessage(DisplayText.EscapeLines(errors), isError: true);
                 console.WriteLine("Run with --help to see the usage.");
                 return ExitCodes.InvalidUsage;
             }
@@ -98,14 +98,14 @@ internal sealed class ConsoleApplication(
             var command = CommandLine.Tokenize(input, backslashEscapes).FlatMap(tokens => CommandLine.Parse(tokens));
             if (command.IsError)
             {
-                LogMessage(command.Error.Get().MkLines(), isError: true);
+                LogMessage(DisplayText.EscapeLines(command.Error.Get()), isError: true);
                 continue;
             }
 
             var exitCode = Execute(command.Success.Get());
             if (exitCode == ExitCodes.InvalidUsage || command.Success.Get() is not VerifyCommand)
             {
-                // Nothing was verified (wrong path, help or version), so ask for a path again.
+                // Nothing was verified (missing file, help or version), so ask for a path again.
                 continue;
             }
 
@@ -141,12 +141,20 @@ internal sealed class ConsoleApplication(
         var archiveFiles = ZipFileReader.Read(command.Path);
         if (archiveFiles.IsError)
         {
-            LogMessage(archiveFiles.Error.Get().MkLines(), isError: true);
-            return ExitCodes.InvalidUsage;
+            var error = archiveFiles.Error.Get();
+            if (error.FileNotFound)
+            {
+                // Nothing to verify was given.
+                LogMessage(DisplayText.Escape(error.Message), isError: true);
+                return ExitCodes.InvalidUsage;
+            }
+            // The file exists but is not a readable ZIP archive, so it cannot be verified.
+            LogMessage($"{InvalidMessagePrefix}{DisplayText.Escape(error.Message)}", isError: true);
+            return ExitCodes.NotValid;
         }
 
         var keyName = GetKeyName(command.Environment);
-        console.WriteLine($"Checking {command.Path} with the {keyName}.");
+        console.WriteLine($"Checking {DisplayText.Escape(command.Path)} with the {keyName}.");
 
         Try<VerificationResult, IReadOnlyList<string>> result;
         try
@@ -174,7 +182,7 @@ internal sealed class ConsoleApplication(
             },
             errors =>
             {
-                LogMessage($"{InvalidMessagePrefix}{errors.MkLines()}", isError: true);
+                LogMessage($"{InvalidMessagePrefix}{DisplayText.EscapeLines(errors)}", isError: true);
                 return ExitCodes.NotValid;
             }
         );
@@ -193,7 +201,7 @@ internal sealed class ConsoleApplication(
         };
         var created = metadata.Created.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
         var previous = metadata.PreviousRecordSignature.Match(_ => "yes", _ => "no");
-        return $"Archive version {version}, type {metadata.ArchiveType.ToString().ToUpperInvariant()}, created {created}, terminal {metadata.TerminalIdentification}, chained to previous archive: {previous}.";
+        return $"Archive version {version}, type {metadata.ArchiveType.ToString().ToUpperInvariant()}, created {created}, terminal {DisplayText.Escape(metadata.TerminalIdentification)}, chained to previous archive: {previous}.";
     }
 
     private static string GetKeyName(SigningEnvironment environment)

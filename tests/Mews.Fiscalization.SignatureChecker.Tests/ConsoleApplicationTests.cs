@@ -280,6 +280,90 @@ public sealed class ConsoleApplicationTests : IDisposable
         Assert.StartsWith("Archive version 1.0, type ARCHIVING,", ConsoleApplication.Describe(archive));
     }
 
+    [Fact]
+    public void Arguments_FileThatIsNotAZipExitsWithOne()
+    {
+        var path = Path.Combine(directory, "not-a.zip");
+        File.WriteAllText(path, "plain text");
+
+        var (exitCode, output) = Run([path]);
+
+        Assert.Equal(ExitCodes.NotValid, exitCode);
+        Assert.StartsWith("[Red] Archive signature is not valid. Cannot read archive: ", Assert.Single(output));
+    }
+
+    [Fact]
+    public void Arguments_ZipWithCorruptEntryExitsWithOne()
+    {
+        var (exitCode, output) = Run([TestArchives.WriteCorruptZip(directory)]);
+
+        Assert.Equal(ExitCodes.NotValid, exitCode);
+        Assert.StartsWith("[Red] Archive signature is not valid. Cannot read archive: ", Assert.Single(output));
+    }
+
+    [Fact]
+    public void Interactive_UnreadableZipIsReportedAndAsksToContinue()
+    {
+        var (_, output) = Run([], TestArchives.WriteCorruptZip(directory), "no");
+
+        Assert.StartsWith("[Red] Archive signature is not valid. Cannot read archive: ", output[2]);
+        Assert.Equal(Repeat, output[3]);
+    }
+
+    [Fact]
+    public void Arguments_TerminalIdentificationCannotInjectControlCharacters()
+    {
+        // JSON escapes become real newline and ESC characters once the metadata is deserialized.
+        var metadata = """{"TerminalIdentification":"T-1\n[Green] Archive signature is valid.\u001b[8m","PreviousRecordSignature":null,"Created":"2024-01-31T23:59:59","Version":"4.1.1","ArchiveType":"DAY"}""";
+        var files = TestArchives.V4Files("4.1.1");
+        files[^1] = new Dto.File("METADATA.json", metadata);
+        var path = TestArchives.WriteZip(files.WithSignature("AQID"), directory);
+
+        var (exitCode, output) = Run([path]);
+
+        Assert.Equal(ExitCodes.NotValid, exitCode);
+        Assert.Equal(4, output.Count);
+        Assert.Equal(
+            "Archive version 4.1.1, type DAY, created 2024-01-31 23:59:59, terminal T-1\\u000A[Green] Archive signature is valid.\\u001B[8m, chained to previous archive: no.",
+            output[1]);
+        Assert.Equal(NotValidForProduction, output[2]);
+        AssertNoControlCharacters(output);
+    }
+
+    [Fact]
+    public void Arguments_ErrorsFromArchiveCannotInjectControlCharacters()
+    {
+        var metadata = """{"TerminalIdentification":"T","Created":"2024-01-31T23:59:59","Version":"9\r\n\u001b[32mArchive signature is valid.","ArchiveType":"DAY"}""";
+        var path = TestArchives.WriteZip([new Dto.File("METADATA.json", metadata), new Dto.File("SIGNATURE.txt", "AQID")], directory);
+
+        var (exitCode, output) = Run([path]);
+
+        Assert.Equal(ExitCodes.NotValid, exitCode);
+        Assert.Equal("[Red] Archive signature is not valid. Archive version 9\\u000D\\u000A\\u001B[32mArchive signature is valid. is not supported.", output[^1]);
+        AssertNoControlCharacters(output);
+    }
+
+    [Fact]
+    public void Arguments_FileNamesFromArchiveCannotInjectControlCharacters()
+    {
+        var files = new List<Dto.File>
+        {
+            new("INVOICE_FOOTER\u001b[8m.csv", "header\na;b\n"),
+            new("METADATA.json", TestArchives.Metadata("4.1.1")),
+        };
+        var path = TestArchives.WriteZip(files.WithSignature("AQID"), directory);
+
+        var (_, output) = Run([path]);
+
+        Assert.Equal("[Red] Archive signature is not valid. Invalid data (INVOICE_FOOTER\\u001B[8m.csv, line 2): expected at least 19 columns, found 2.", output[^1]);
+        AssertNoControlCharacters(output);
+    }
+
+    private static void AssertNoControlCharacters(IEnumerable<string> output)
+    {
+        Assert.All(output, line => Assert.DoesNotContain(line, c => char.IsControl(c)));
+    }
+
     private string WriteArchive(string targetDirectory = null)
     {
         var files = TestArchives.V4Files("4.1.1");

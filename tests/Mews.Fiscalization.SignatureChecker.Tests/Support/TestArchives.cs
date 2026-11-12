@@ -125,4 +125,21 @@ internal static class TestArchives
         }
         return path;
     }
+
+    /// <summary>
+    /// A ZIP file whose directory is intact (so it opens) but whose only entry fails to decompress.
+    /// </summary>
+    public static string WriteCorruptZip(string directory)
+    {
+        var path = WriteZip([new File("METADATA.json", new string('x', 4096))], directory);
+        var bytes = System.IO.File.ReadAllBytes(path);
+
+        // Local file header: the file name length is at offset 26 and the extra field length at 28; the data follows the 30-byte header.
+        var dataStart = 30 + BitConverter.ToUInt16(bytes, 26) + BitConverter.ToUInt16(bytes, 28);
+
+        // A deflate block header with the reserved block type 11 is always invalid.
+        bytes[dataStart] = 0xFF;
+        System.IO.File.WriteAllBytes(path, bytes);
+        return path;
+    }
 }

@@ -62,6 +62,7 @@ public sealed class ExecutableTests : IDisposable
         Assert.Equal(ExitCodes.NotValid, (await RunAsync([path, "--develop"])).ExitCode);
         Assert.Equal(ExitCodes.InvalidUsage, (await RunAsync([Path.Combine(directory, "missing.zip")])).ExitCode);
         Assert.Equal(ExitCodes.InvalidUsage, (await RunAsync([path, "--develp"])).ExitCode);
+        Assert.Equal(ExitCodes.NotValid, (await RunAsync([TestArchives.WriteCorruptZip(directory)])).ExitCode);
         Assert.Equal(ExitCodes.Valid, (await RunAsync(["--help"])).ExitCode);
     }
 

@@ -66,8 +66,8 @@ The exit code tells you the result, so you can use the tool in scripts:
 | Exit code | Meaning |
 | --- | --- |
 | `0` | The archive signature is valid. |
-| `1` | The archive signature is not valid, or the archive couldn't be read. |
-| `2` | The arguments are invalid, or the file doesn't exist or isn't a ZIP file. |
+| `1` | The archive signature is not valid, or the file isn't a readable archive (not a ZIP, damaged, or missing required data). |
+| `2` | The arguments are invalid, or the file doesn't exist. |
 
 #### Options
 
@@ -95,8 +95,10 @@ Archive signature is valid.
 | --- | --- |
 | `Archive signature is valid.` (green) | The archive is unchanged since Mews signed it. |
 | `Archive signature is not valid. The archive contents do not match its signature for the Mews production key.` (red) | The data was changed, the archive was signed by another environment (the tool suggests trying `--develop` or `--production`), or it isn't a Mews archive. |
-| `Archive signature is not valid. <reason>` (red) | The archive is incomplete or malformed, for example `No unique file found METADATA.json*.`, `Archive version 3.0 is not supported.`, `Currency not found.` or `Invalid data (INVOICE_FOOTER-2025.csv, line 12): expected at least 19 columns, found 3.`. |
-| `File <path> does not exist.` / `Cannot read archive: ...` (red) | The path is wrong or the file isn't a ZIP file. In interactive mode the tool asks for a path again. |
+| `Archive signature is not valid. <reason>` (red) | The archive is incomplete or malformed, for example `No unique file found METADATA.json*.`, `Archive version 3.0 is not supported.`, `Currency not found.`, `Invalid data (INVOICE_FOOTER-2025.csv, line 12): expected at least 19 columns, found 3.` or `Cannot read archive: ...` when the file isn't a ZIP file or is damaged. |
+| `File <path> does not exist.` (red) | The path is wrong. In interactive mode the tool asks for a path again. |
+
+Text taken from the archive, such as the terminal identification or file names, is shown with control and invisible formatting characters escaped (for example a newline appears as `\u000A`). A tampered archive can't hide or fake the result line that way. The original values are still used to verify the signature.
 
 ## Supported archives
 
