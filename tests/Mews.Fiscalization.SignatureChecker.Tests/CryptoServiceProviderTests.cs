@@ -32,8 +32,9 @@ public sealed class CryptoServiceProviderTests
         using var production = CryptoServiceProvider.GetProduction();
         using var develop = CryptoServiceProvider.GetDevelop();
 
-        Assert.True(production.PublicOnly);
-        Assert.True(develop.PublicOnly);
+        // RSACryptoServiceProvider.PublicOnly is not reliable on Linux and macOS, so check that there is no private key to export.
+        Assert.ThrowsAny<CryptographicException>(() => production.ExportParameters(includePrivateParameters: true));
+        Assert.ThrowsAny<CryptographicException>(() => develop.ExportParameters(includePrivateParameters: true));
     }
 
     [Theory]
