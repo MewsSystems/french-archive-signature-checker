@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Mews.Fiscalization.SignatureChecker/Mews.Fiscalization.SignatureChecker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Mews.Fiscalization.SignatureChecker.Tests/Mews.Fiscalization.SignatureChecker.Tests.csproj" />
+  </Folder>
+</Solution>

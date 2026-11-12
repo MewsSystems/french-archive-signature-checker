@@ -6,9 +6,9 @@ internal static class ArchiveReader
     {
         var metadata = GetFile(files, "METADATA.json");
         var signature = GetFile(files, "SIGNATURE.txt");
-        var taxTotals = GetOptionalEntry(files, "TAX_TOTALS").Map(e => GetCsvData(e.Content));
-        var totals = GetOptionalEntry(files, "TOTALS").Map(e => GetCsvData(e.Content));
-        var invoiceFooters = GetFiles(files, "INVOICE_FOOTER").Select(f => GetCsvData(f.Content));
+        var taxTotals = GetOptionalEntry(files, "TAX_TOTALS").Map(e => GetCsvData(e));
+        var totals = GetOptionalEntry(files, "TOTALS").Map(e => GetCsvData(e));
+        var invoiceFooters = GetFiles(files, "INVOICE_FOOTER").Select(f => GetCsvData(f));
 
         return Try.Aggregate(
             metadata,
@@ -32,9 +32,9 @@ internal static class ArchiveReader
         return files.SingleOption(e => e.Name.StartsWith(namePrefix));
     }
 
-    private static CsvData GetCsvData(string source)
+    private static CsvData GetCsvData(File file)
     {
-        var lines = source.Split('\n').Skip(1).Where(l => !string.IsNullOrWhiteSpace(l));
-        return new CsvData(lines.Select(l => new CsvRow(l.Split(';'))));
+        var lines = file.Content.Split('\n').Select((line, index) => (Line: line, Number: index + 1)).Skip(1).Where(l => !string.IsNullOrWhiteSpace(l.Line));
+        return new CsvData(file.Name, lines.Select(l => new CsvRow(l.Number, l.Line.Split(';'))));
     }
 }

@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: monthly
+    ignore:
+      # Major FuncSharp upgrades can change parsing/aggregation semantics; upgrade deliberately and re-verify.
+      - dependency-name: FuncSharp
+        update-types: ["version-update:semver-major"]
+    groups:
+      test-dependencies:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet*"

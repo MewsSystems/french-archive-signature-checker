@@ -26,7 +26,7 @@ internal sealed class Archive
 
     private static Try<Archive, IReadOnlyList<string>> Parse(Dto.Archive archive)
     {
-        return ArchiveMetadata.Create(archive).FlatMap(metadata =>
+        return ArchiveMetadata.Create(archive).FlatMap(metadata => ArchiveStructure.Validate(archive, metadata.Version).FlatMap(_ =>
         {
             return Try.Aggregate(
                 TaxSummary.Create(archive, metadata.Version),
@@ -34,6 +34,6 @@ internal sealed class Archive
                 Signature.Create(archive.Signature.Content),
                 (taxSummary, reportedValue, signature) => new Archive(metadata, signature, taxSummary, reportedValue)
             );
-        });
+        }));
     }
 }

@@ -25,7 +25,11 @@ internal sealed class ArchiveMetadata
 
     public static Try<ArchiveMetadata, IReadOnlyList<string>> Create(Dto.Archive archive)
     {
-        var rawMetadata = Try.Catch<Dto.ArchiveMetadata, Exception>(_ => JsonConvert.DeserializeObject<Dto.ArchiveMetadata>(archive.Metadata.Content));
+        var rawMetadata = Try.Catch<Dto.ArchiveMetadata, Exception>(_ =>
+        {
+            // An empty or "null" document deserializes to null rather than throwing.
+            return JsonConvert.DeserializeObject<Dto.ArchiveMetadata>(archive.Metadata.Content) ?? throw new JsonException("Metadata is empty.");
+        });
         return rawMetadata.MapError(_ => $"Invalid data ({archive.Metadata.Name}).".ToReadOnlyList()).FlatMap(metadata =>
         {
             var version = metadata.Version switch
@@ -36,23 +40,27 @@ internal sealed class ArchiveMetadata
                 "4.1.1" => Try.Success<ArchiveVersion, IReadOnlyList<string>>(ArchiveVersion.v411),
                 _ => Try.Error<ArchiveVersion, IReadOnlyList<string>>($"Archive version {metadata.Version} is not supported.".ToReadOnlyList())
             };
-            var archiveType = version.FlatMap(v => v switch
+            // The archive type depends on the version, so they are parsed together to report an unsupported version only once.
+            var versionAndType = version.FlatMap(v =>
             {
-                ArchiveVersion.v100 => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.Archiving),
-                ArchiveVersion.v400 => ParseVersion4ArchiveType(metadata),
-                ArchiveVersion.v410 => ParseVersion4ArchiveType(metadata),
-                ArchiveVersion.v411 => ParseVersion4ArchiveType(metadata),
-                _ => Try.Error<ArchiveType, IReadOnlyList<string>>($"Archive type {v} is not supported.".ToReadOnlyList())
+                var archiveType = v switch
+                {
+                    ArchiveVersion.v100 => Try.Success<ArchiveType, IReadOnlyList<string>>(ArchiveType.Archiving),
+                    ArchiveVersion.v400 => ParseVersion4ArchiveType(metadata),
+                    ArchiveVersion.v410 => ParseVersion4ArchiveType(metadata),
+                    ArchiveVersion.v411 => ParseVersion4ArchiveType(metadata),
+                    _ => Try.Error<ArchiveType, IReadOnlyList<string>>($"Archive type {v} is not supported.".ToReadOnlyList())
+                };
+                return archiveType.Map(t => (Version: v, Type: t));
             });
             var previousRecordSignature = metadata.PreviousRecordSignature.ToOption().Match(
                 s => Signature.Create(s),
                 _ => Try.Success<Signature, IReadOnlyList<string>>(null)
             );
             return Try.Aggregate(
-                version,
+                versionAndType,
                 previousRecordSignature,
-                archiveType,
-                (v, s, t) => new ArchiveMetadata(metadata.TerminalIdentification, s.ToOption(), metadata.Created, v, t)
+                (vt, s) => new ArchiveMetadata(metadata.TerminalIdentification, s.ToOption(), metadata.Created, vt.Version, vt.Type)
             );
         });
     }

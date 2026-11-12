@@ -7,39 +7,57 @@ on:
   pull_request:
     branches:
       - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
 jobs:
-  build-and-test-all:
+  build-and-test:
+    name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
-    env:
-      DOTNET_NOLOGO: true
-      DOTNET_CLI_TELEMETRY_OPTOUT: true
-      
-    defaults:
-      run:
-        working-directory: src
-        
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    
-    - name: Setup .NET 8
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.x
+      - name: Checkout
+        uses: actions/checkout@v7
 
-    - name: Clean
-      run: dotnet clean ../Mews.Fiscalization.SignatureChecker.sln --configuration Release && dotnet nuget locals all --clear
-        
-    - name: Install dependencies
-      run: dotnet restore
-    
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-    
-    - name: Test
-      run: dotnet test --no-restore
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Mews.Fiscalization.SignatureChecker.slnx
+
+      - name: Build
+        run: dotnet build Mews.Fiscalization.SignatureChecker.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: >-
+          dotnet test Mews.Fiscalization.SignatureChecker.slnx
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --collect "XPlat Code Coverage"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ matrix.os }}
+          path: TestResults
+          if-no-files-found: warn
