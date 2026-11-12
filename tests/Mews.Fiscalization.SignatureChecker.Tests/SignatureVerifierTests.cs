@@ -167,6 +167,65 @@ public sealed class SignatureVerifierTests
         Assert.False(Verify(TestArchives.V4Files("4.0").WithSignature("")));
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(255)]
+    [InlineData(257)]
+    [InlineData(1024)]
+    public void IsArchiveValid_RejectsSignatureOfWrongLength(int length)
+    {
+        var signature = TestArchives.ToBase64Url(new byte[length]);
+
+        Assert.False(Verify(TestArchives.V4Files("4.1.1").WithSignature(signature)));
+    }
+
+    [Fact]
+    public void IsArchiveValid_RejectsTruncatedSignature()
+    {
+        var files = TestArchives.V4Files("4.1.1");
+        var signature = TestArchives.Sign(Payload(files), HashAlgorithmName.SHA256);
+
+        Assert.False(Verify(files.WithSignature(signature[..^4])));
+    }
+
+    [Fact]
+    public void IsArchiveValid_KeyThatCannotCheckTheSignatureMeansNotValid()
+    {
+        // macOS throws instead of returning false for a malformed signature; this reproduces that on every platform.
+        var files = TestArchives.V4Files("4.1.1").WithSignature("AQID");
+        var archive = Model.Archive.Create(files).Success.Get();
+        using var key = new ThrowingRsa();
+
+        Assert.False(SignatureVerifier.IsArchiveValid(archive, key, files));
+    }
+
+    [Theory]
+    [InlineData("", nameof(SigningEnvironment.Production))]
+    [InlineData("", nameof(SigningEnvironment.Develop))]
+    [InlineData("AQID", nameof(SigningEnvironment.Production))]
+    [InlineData("AQID", nameof(SigningEnvironment.Develop))]
+    public void Verify_MalformedSignatureIsNotValidWithMewsKeys(string signature, string environment)
+    {
+        var files = TestArchives.V4Files("4.1.1").WithSignature(signature);
+
+        var result = SignatureVerifier.Verify(files, Enum.Parse<SigningEnvironment>(environment)).Success.Get();
+
+        Assert.False(result.IsValid);
+    }
+
+    private sealed class ThrowingRsa : RSA
+    {
+        public override RSAParameters ExportParameters(bool includePrivateParameters) => throw new NotSupportedException();
+
+        public override void ImportParameters(RSAParameters parameters) => throw new NotSupportedException();
+
+        public override bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        {
+            throw new CryptographicException("Error occurred during a cryptographic operation.");
+        }
+    }
+
     [Fact]
     public void Verify_ReturnsErrorsForInvalidArchive()
     {

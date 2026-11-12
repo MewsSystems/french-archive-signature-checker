@@ -34,7 +34,16 @@ internal static class SignatureVerifier
     {
         var computedSignature = ComputeSignature(archive, files);
         var hashAlgorithmName = GetHashAlgorithmName(archive.Metadata.Version);
-        return rsa.VerifyData(computedSignature, archive.Signature.Value, hashAlgorithmName, RSASignaturePadding.Pkcs1);
+        try
+        {
+            return rsa.VerifyData(computedSignature, archive.Signature.Value, hashAlgorithmName, RSASignaturePadding.Pkcs1);
+        }
+        catch (CryptographicException)
+        {
+            // Windows and Linux return false for a malformed signature (empty or the wrong length), but macOS throws.
+            // A signature that cannot be checked is never valid.
+            return false;
+        }
     }
 
     public static HashAlgorithmName GetHashAlgorithmName(ArchiveVersion version)
