@@ -9,7 +9,17 @@ It reads the archive ZIP file, rebuilds the data that Mews signed (tax totals pe
 
 ## Using the tool
 
-The tool is distributed as a ZIP file with a `WindowsOS` and a `MacOS` folder. Each folder has a standalone executable, so you don't need to install .NET.
+Download `Mews.Fiscalization.SignatureChecker.zip` from the [latest release](https://github.com/MewsSystems/french-archive-signature-checker/releases/latest). It has one folder per platform, each with a standalone executable, so you don't need to install .NET:
+
+| Folder | For |
+| --- | --- |
+| `WindowsOS` | Windows (64-bit). |
+| `MacOS` | Macs with Apple Silicon (M1 and later). |
+| `MacOS-Intel` | Macs with an Intel processor. |
+
+To check which Mac you have, open the Apple menu > **About This Mac**: it shows **Chip** (Apple M1 or later, use `MacOS`) or **Processor** (Intel, use `MacOS-Intel`).
+
+The ZIP also contains `SHA256SUMS.txt`, and the same checksums are in the release notes. To confirm an executable wasn't changed after Mews published it, compare its SHA-256 with that list (`certutil -hashfile <file> SHA256` on Windows, `shasum -a 256 <file>` on macOS).
 
 ### Windows
 
@@ -19,7 +29,7 @@ The tool is distributed as a ZIP file with a `WindowsOS` and a `MacOS` folder. E
 ### macOS
 
 1. Extract the ZIP file.
-2. Open Terminal and go to the `MacOS` folder:
+2. Open Terminal and go to the `MacOS` folder, or `MacOS-Intel` on an Intel Mac:
    ```sh
    cd path/to/MacOS
    ```
@@ -134,14 +144,25 @@ dotnet run --project src/Mews.Fiscalization.SignatureChecker
 
 ### Building the distributable executables
 
-The standalone executables in the distribution ZIP are self-contained, single-file builds:
+The executables in the distribution ZIP are self-contained, single-file, compressed builds without debug symbols. Build them from a clean checkout of the release commit:
 
 ```sh
-dotnet publish src/Mews.Fiscalization.SignatureChecker -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/WindowsOS
-dotnet publish src/Mews.Fiscalization.SignatureChecker -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true -o publish/MacOS
+dotnet publish src/Mews.Fiscalization.SignatureChecker -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -o publish/WindowsOS
+dotnet publish src/Mews.Fiscalization.SignatureChecker -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -o publish/MacOS
+dotnet publish src/Mews.Fiscalization.SignatureChecker -c Release -r osx-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -o publish/MacOS-Intel
 ```
 
-Use `osx-x64` instead of `osx-arm64` for Intel Macs.
+Don't enable trimming: Newtonsoft.Json reads the metadata through reflection, which trimming can break.
+
+To package a release:
+
+- Put the three folders in `Mews.Fiscalization.SignatureChecker.zip`, and mark the two macOS executables as executable (Unix mode `755`) in the ZIP so users don't need `chmod`.
+- Add a `SHA256SUMS.txt` with the SHA-256 of each executable, and paste the same list into the release notes.
+- The macOS executables get an ad-hoc code signature from the .NET SDK, even when built on Windows. Apple Silicon Macs need it to run the file. They aren't notarized, which is why users run the `xattr` step above.
+- Attach the ZIP in the release's **Attach binaries** area (up to 2 GiB per file), not in the description box, which is limited to 25 MB.
+- Before publishing, run the tool on a real production archive on Windows and on a Mac.
+
+`publish/` is ignored by git.
 
 ### Changing the tool
 
