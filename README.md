@@ -1,7 +1,6 @@
 # French archive signature checker
 
 [![build-and-test](https://github.com/MewsSystems/french-archive-signature-checker/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/MewsSystems/french-archive-signature-checker/actions/workflows/build-and-test.yml)
-[![CodeQL](https://github.com/MewsSystems/french-archive-signature-checker/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/MewsSystems/french-archive-signature-checker/actions/workflows/codeql-analysis.yml)
 
 `Mews.Fiscalization.SignatureChecker` checks that a French fiscal archive (NF525) exported from Mews has not been changed since Mews signed it.
 
@@ -172,4 +171,4 @@ This tool is used in fiscal audits, so a change must never alter which archives 
 - Don't change the public keys in `CryptoServiceProvider.cs`. `CryptoServiceProviderTests` pins their fingerprints.
 - Upgrade dependencies that affect parsing (`FuncSharp`, `Newtonsoft.Json`) deliberately, and check the results against real archives.
 
-CI builds and tests on Windows, Linux and macOS for every pull request, and CodeQL scans the code weekly.
+CI builds and tests on Windows, Linux and macOS for every pull request. CodeQL scans the C# code and the workflows on every pull request and weekly through GitHub's CodeQL default setup (Settings > Code security), so the repo has no CodeQL workflow of its own; GitHub rejects workflow-based CodeQL results while default setup is enabled.
